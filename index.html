@@ -204,7 +204,7 @@
           </div>
           <div class="flex gap-2">
             <button onclick="saveAllPPCT()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded transition">
-              <i class="fa-solid fa-floppy-disk mr-1"></i> Lưu toàn bộ & Tải lên Kho dùng chung
+              <i class="fa-solid fa-floppy-disk mr-1"></i> Lưu cá nhân & Đồng bộ lên Kho dùng chung
             </button>
           </div>
         </div>
@@ -312,7 +312,8 @@
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
-      getFirestore, 
+      initializeFirestore,
+      memoryLocalCache,
       doc, 
       getDoc, 
       setDoc, 
@@ -332,7 +333,10 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    // Khởi tạo Firestore với memoryLocalCache để tránh lỗi "client is offline" khi đọc dữ liệu dùng chung
+    const db = initializeFirestore(app, {
+      localCache: memoryLocalCache()
+    });
 
     const ALL_SUBJECTS = [
       "Toán", "Ngữ văn", "Tiếng Anh", "Vật lý", "Hóa học", "Sinh học",
@@ -931,24 +935,50 @@
       }
     };
 
+    // HÀM TẢI PPCT DÙNG CHUNG: DÙNG FIRESTORE SDK KẾT HỢP DỰ PHÒNG QUA REST API TRÁNH LỖI "CLIENT IS OFFLINE"
     window.loadPPCTFromRepository = async function(subject, grade, targetKey) {
       try {
-        const repoDoc = await getDoc(doc(db, "shared_ppct", targetKey));
-        if (repoDoc.exists() && repoDoc.data().rawContent) {
-          const remoteData = repoDoc.data();
+        let content = "";
+        let periods = 2;
+
+        try {
+          const repoDoc = await getDoc(doc(db, "shared_ppct", targetKey));
+          if (repoDoc.exists() && repoDoc.data().rawContent) {
+            content = repoDoc.data().rawContent;
+            periods = repoDoc.data().periodsPerWeek || 2;
+          }
+        } catch (e) {
+          console.warn("Lỗi Firestore SDK, chuyển sang REST API fallback:", e);
+        }
+
+        // Dự phòng bằng REST API trực tiếp tới Firestore
+        if (!content) {
+          const restUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/shared_ppct/${encodeURIComponent(targetKey)}`;
+          const res = await fetch(restUrl);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.fields && data.fields.rawContent) {
+              content = data.fields.rawContent.stringValue || "";
+              periods = data.fields.periodsPerWeek ? parseInt(data.fields.periodsPerWeek.integerValue) : 2;
+            }
+          }
+        }
+
+        if (content) {
           const ta = document.querySelector(`.ppct-raw[data-key="${targetKey}"]`);
           const pInput = document.querySelector(`.ppct-periods[data-key="${targetKey}"]`);
-          if (ta) ta.value = remoteData.rawContent;
-          if (pInput && remoteData.periodsPerWeek) pInput.value = remoteData.periodsPerWeek;
+          if (ta) ta.value = content;
+          if (pInput) pInput.value = periods;
 
+          if (!userProfile.ppctData) userProfile.ppctData = {};
           userProfile.ppctData[targetKey] = {
-            periodsPerWeek: remoteData.periodsPerWeek || 2,
-            rawContent: remoteData.rawContent
+            periodsPerWeek: periods,
+            rawContent: content
           };
 
           alert(`Đã tải thành công PPCT [${subject} - Khối ${grade}] từ Kho dùng chung!`);
         } else {
-          alert(`Hiện chưa có dữ liệu dùng chung cho [${subject} - Khối ${grade}]. Bạn có thể nhập và bấm Lưu để chia sẻ lên Kho!`);
+          alert(`Hiện chưa có dữ liệu trong Kho dùng chung cho [${subject} - Khối ${grade}]. Bạn có thể nhập và bấm 'Lưu cá nhân & Đồng bộ' để chia sẻ cho mọi người!`);
         }
       } catch (err) {
         alert("Lỗi khi kết nối kho dùng chung: " + err.message);
@@ -1102,6 +1132,7 @@
       return map;
     }
 
+    // TỔNG HỢP VÀ XEM TRƯỚC: TỰ ĐỘNG ĐỒNG BỘ TRỰC TIẾP TỪ GIAO DIỆN (ĐẢM BẢO TẤT CẢ TÀI KHOẢN KHÔNG CẦN RE-LOGIN)
     window.generateWeeklyReportPreview = function() {
       const week = parseInt(document.getElementById("selWeek").value) || 1;
       const mondayStr = document.getElementById("inputMondayDate").value;
@@ -1109,6 +1140,24 @@
         alert("Vui lòng chọn ngày Thứ 2 đầu tuần!");
         return;
       }
+
+      // Đọc trực tiếp thời khóa biểu từ các ô select đang hiển thị trên màn hình
+      if (!userProfile.timetable) userProfile.timetable = {};
+      document.querySelectorAll(".tkb-cell-select").forEach(sel => {
+        const key = sel.getAttribute("data-key");
+        if (key) userProfile.timetable[key] = sel.value;
+      });
+
+      // Đọc trực tiếp toàn bộ textarea PPCT đang hiển thị trên màn hình
+      if (!userProfile.ppctData) userProfile.ppctData = {};
+      document.querySelectorAll(".ppct-raw").forEach(ta => {
+        const key = ta.getAttribute("data-key");
+        const pInput = document.querySelector(`.ppct-periods[data-key="${key}"]`);
+        userProfile.ppctData[key] = {
+          periodsPerWeek: pInput ? (parseInt(pInput.value) || 2) : 2,
+          rawContent: ta.value.trim()
+        };
+      });
 
       renderStartLessonInputs();
       document.getElementById("previewSection").classList.remove("hidden");
@@ -1305,6 +1354,7 @@
       calculatedPreviewRows[idx][field] = val;
     };
 
+    // 9. XUẤT FILE EXCEL: ĐẢM BẢO CHÍNH XÁC Y CHANG BẢNG MẪU VÀ TÁCH RÕ HÀNG 12 VÀ HÀNG 13:14 (A, B, C)
     window.exportToExcelExactMatch = async function() {
       if (calculatedPreviewRows.length === 0) {
         alert("Vui lòng bấm 'Tổng hợp & Xem trước bảng Tăng Giờ' trước khi xuất Excel!");
@@ -1385,22 +1435,36 @@
       sheet.getCell('A11').value = `Phân công chuyên môn: ${assignmentDescriptions}${dutyDescriptions ? ', ' + dutyDescriptions : ''}`;
       sheet.getCell('A11').font = { name: 'Times New Roman', size: 12 };
 
-      sheet.mergeCells('A12:A14');
+      // ĐỊNH DẠNG CHUẨN XÁC HÀNG TIÊU ĐỀ THEO ĐÚNG ẢNH ĐÍNH KÈM
       sheet.getCell('A12').value = "STT";
-      sheet.mergeCells('B12:B14');
       sheet.getCell('B12').value = "Ngày tháng năm";
-      sheet.mergeCells('C12:C14');
       sheet.getCell('C12').value = "Những công việc đã làm (ghi tên bài dạy)";
+
+      // Cột D (Lớp): Gộp cả 3 dòng D12:D14
       sheet.mergeCells('D12:D14');
       sheet.getCell('D12').value = "Lớp";
 
+      // Tiêu đề nhóm Số giờ thực hiện (E12:G12) & Số giờ định mức (H12:J12)
       sheet.mergeCells('E12:G12');
       sheet.getCell('E12').value = "Số giờ thực hiện";
       sheet.mergeCells('H12:J12');
       sheet.getCell('H12').value = "Số giờ định mức";
+
+      // Số giờ thừa (K12:K13)
       sheet.mergeCells('K12:K13');
       sheet.getCell('K12').value = "Số giờ thừa";
 
+      // HÀNG 13 & 14 ĐƯỢC TÁCH CHO CÁC Ô A, B, C THEO ĐÚNG ẢNH MẪU
+      sheet.mergeCells('A13:A14');
+      sheet.getCell('A13').value = "A";
+
+      sheet.mergeCells('B13:B14');
+      sheet.getCell('B13').value = "B";
+
+      sheet.mergeCells('C13:C14');
+      sheet.getCell('C13').value = "C";
+
+      // Hàng 13 các cột con
       sheet.getCell('E13').value = "Giờ dạy";
       sheet.getCell('F13').value = "CT khác";
       sheet.getCell('G13').value = "Cộng";
@@ -1411,6 +1475,7 @@
       sheet.getCell('J13').value = "Còn lại";
       sheet.getCell('J13').font = { name: 'Times New Roman', size: 10, bold: true };
 
+      // Hàng 14 ghi số thứ tự công thức (1) đến (7)
       sheet.getCell('E14').value = "(1)";
       sheet.getCell('F14').value = "(2)";
       sheet.getCell('G14').value = "(3) = (1)+(2)";
@@ -1425,11 +1490,12 @@
           cell.border = thinBorder;
           cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
           if (!cell.font) {
-            cell.font = { name: 'Times New Roman', size: (r === 14 ? 9 : 10) };
+            cell.font = { name: 'Times New Roman', size: (r === 14 ? 9 : (r === 12 && c >= 5 ? 10 : 12)) };
           }
         }
       }
 
+      // ĐIỀN CÁC DÒNG DỮ LIỆU TỪ DÒNG 15
       const startDataRow = 15;
       let currentRowIndex = startDataRow;
 
@@ -1472,6 +1538,7 @@
 
       const endDataRow = currentRowIndex - 1;
 
+      // HÀNG TỔNG CỘNG
       const sumRowIndex = currentRowIndex;
       const sumRow = sheet.getRow(sumRowIndex);
       sumRow.getCell(3).value = "Tổng cộng";
