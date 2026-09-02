@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Báo giảng & Bảng kê Tăng giờ Sư phạm</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- ExcelJS CDN for full Excel styling & formatting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+  <!-- FileSaver.js for downloading blob -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-sky-700 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl shadow-inner border border-white/20">
+          <i class="fa-solid fa-file-excel text-emerald-300"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">HỆ THỐNG BÁO GIẢNG & TĂNG GIỜ</h1>
+          <p class="text-xs text-blue-100 hidden sm:block">Biểu mẫu thanh toán thừa giờ & sổ báo giảng sư phạm chuẩn THPT</p>
+        </div>
+      </div>
+
+      <!-- User Panel in Header -->
+      <div id="nav-user-panel" class="hidden flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <div id="nav-user-name" class="text-sm font-semibold leading-tight">Giáo viên</div>
+          <div id="nav-user-email" class="text-xs text-blue-200 truncate max-w-[200px]">user@example.com</div>
+        </div>
+        <span id="admin-badge" class="hidden px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-400 text-amber-950 border border-amber-300">
+          <i class="fa-solid fa-shield-halved mr-1"></i>Admin
+        </span>
+        <button id="btn-open-admin" class="hidden px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shadow-sm transition">
+          <i class="fa-solid fa-users-gear mr-1"></i>QL Tài khoản
+        </button>
+        <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition">
+          <i class="fa-solid fa-right-from-bracket mr-1"></i>Đăng xuất
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-24 opacity-0 pointer-events-none flex items-center p-4 rounded-xl shadow-xl border text-sm max-w-md bg-white">
+    <div id="toast-icon" class="text-xl mr-3"></div>
+    <div id="toast-msg" class="flex-1 font-medium">Thông báo</div>
+  </div>
+
+  <!-- Auth Screen (Shown when logged out) -->
+  <div id="auth-screen" class="flex-1 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800" id="auth-title">Đăng nhập Hệ thống</h2>
+        <p class="text-xs text-slate-500 mt-1">Dành cho Giáo viên bộ môn và Cán bộ quản lý</p>
+      </div>
+
+      <form id="auth-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email đăng nhập</label>
+          <div class="relative">
+            <i class="fa-regular fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+            <input type="email" id="auth-email" required placeholder="Nhập địa chỉ email..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mật khẩu</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+            <input type="password" id="auth-password" required placeholder="Nhập mật khẩu..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+          </div>
+        </div>
+
+        <div id="admin-reg-hint" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2">
+          <i class="fa-solid fa-shield-cat text-base text-amber-600 mt-0.5"></i>
+          <span>Phát hiện tài khoản Quản trị tối cao (<strong>toapt989@gmail.com</strong>). Bạn có thể bấm Đăng ký lần đầu hoặc Đăng nhập trực tiếp.</span>
+        </div>
+
+        <div class="pt-2 flex flex-col gap-2.5">
+          <button type="submit" id="btn-auth-submit" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span id="btn-auth-text">Đăng nhập</span>
+          </button>
+          <button type="button" id="btn-admin-register" class="hidden w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold text-sm shadow-md transition items-center justify-center gap-2">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Đăng ký mật khẩu Admin lần đầu</span>
+          </button>
+        </div>
+
+        <div class="text-center text-xs text-slate-500 pt-3 border-t border-slate-100">
+          Giáo viên cần được quản trị viên <span class="text-blue-600 font-semibold">toapt989@gmail.com</span> khởi tạo tài khoản trước khi truy cập.
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Application Container -->
+  <main id="app-screen" class="hidden flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- Top Status Banner -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl font-bold shadow-inner">
+          <i class="fa-solid fa-user-tie"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 id="banner-teacher-name" class="text-xl font-bold text-slate-800">Thầy/Cô: Đang tải...</h2>
+            <span id="banner-subject-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Hóa học</span>
+          </div>
+          <p id="banner-info-summary" class="text-xs text-slate-500 mt-0.5">Tổ chuyên môn: Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-save-all-cloud" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Lưu cấu hình lên Cloud
+        </button>
+        <button id="btn-export-excel-quick" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-file-excel"></i> Xuất Excel Tuần Hiện Tại
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-slate-200">
+      <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto pb-1" aria-label="Tabs">
+        <button class="tab-btn active px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-blue-600 text-blue-600 bg-white" data-tab="tab-profile">
+          <i class="fa-solid fa-id-card mr-1.5"></i>1. Hồ sơ cá nhân & Định mức
+        </button>
+        <button class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="tab-subjects">
+          <i class="fa-solid fa-book-open mr-1.5"></i>2. Môn dạy & HĐTNHN & PPCT
+        </button>
+        <button class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="tab-timetable">
+          <i class="fa-solid fa-calendar-days mr-1.5"></i>3. Thời khóa biểu (TKB)
+        </button>
+        <button class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="tab-export">
+          <i class="fa-solid fa-calculator mr-1.5"></i>4. Xem trước & Xuất Excel
+        </button>
+      </nav>
+    </div>
+
+    <!-- TAB 1: Profile & Teaching Quotas -->
+    <div id="tab-profile" class="tab-content block space-y-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+        <div class="border-b border-slate-100 pb-4">
+          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-user-gear text-blue-600"></i>
+            Thông tin Giáo viên & Chỉ số Định mức
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">Thông tin này tự động được lưu và điền sẵn cho các lần đăng nhập tiếp theo.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Họ và tên giáo viên <span class="text-red-500">*</span></label>
+            <input type="text" id="prof-name" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tổ chuyên môn</label>
+            <input type="text" id="prof-department" value="Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Số giờ tiêu chuẩn / định mức tuần <span class="text-red-500">*</span></label>
+            <input type="number" id="prof-standard-hours" value="17" min="1" max="40" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-semibold text-indigo-600">
+            <p class="text-[11px] text-slate-400 mt-1">Mặc định 17 tiết/tuần (dùng để tích lũy 1 tiết vào Giờ định mức đến khi đủ).</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Hệ số lương</label>
+            <input type="number" step="0.01" id="prof-salary-coeff" value="2.67" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Phụ cấp chức vụ / ưu đãi</label>
+            <input type="number" step="0.01" id="prof-allowance" value="0.4" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Môn dạy chính hiển thị</label>
+            <input type="text" id="prof-main-subject" value="Hóa học" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Phân công chuyên môn tổng quát</label>
+          <input type="text" id="prof-assignment-desc" value="Dạy Hóa học lớp 11a1 (2t), CĐ Hóa học 11a1 (1t), HĐTNHN 12a4 (1t), Chủ nhiệm lớp 12a3 (3t)" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+          <p class="text-[11px] text-slate-400 mt-1">Nội dung này sẽ xuất hiện tại phần đầu trang của File Excel.</p>
+        </div>
+
+        <!-- Kiêm nhiệm & Công tác khác -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-briefcase text-blue-600"></i> Công tác kiêm nhiệm / Công tác khác (ghi vào cột CT khác)
+            </h4>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-600 mb-1">Tên nội dung kiêm nhiệm</label>
+              <input type="text" id="prof-extra-task-name" value="Chủ nhiệm lớp 12a3" placeholder="Ví dụ: Chủ nhiệm lớp 12a3, Phụ trách phòng thí nghiệm..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Số tiết kiêm nhiệm / tuần</label>
+              <input type="number" id="prof-extra-task-hours" value="3" min="0" max="20" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-semibold text-blue-700">
+            </div>
+          </div>
+        </div>
+
+        <!-- Leadership Signatures -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-signature text-blue-600"></i> Ban Giám hiệu & Tổ trưởng ký duyệt
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Tổ trưởng chuyên môn</label>
+              <input type="text" id="sign-head-dep" value="Võ Hoàng Sang" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Phó Hiệu trưởng</label>
+              <input type="text" id="sign-vice-prin" value="Ngô Hồng Ân" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Hiệu trưởng</label>
+              <input type="text" id="sign-principal" value="Nguyễn Thành Tuấn" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button id="btn-save-profile-tab" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu thông tin hồ sơ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Subjects, HĐTNHN & PPCT -->
+    <div id="tab-subjects" class="tab-content hidden space-y-6">
+      <!-- Subject selection -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-blue-600"></i> Danh sách Môn dạy & Chuyên đề (CĐ)
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tích chọn các môn thầy cô tham gia giảng dạy trong học kỳ này.</p>
+          </div>
+          <span class="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100" id="selected-subjects-counter">Đã chọn: 2 môn</span>
+        </div>
+
+        <!-- Checkboxes -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 pt-2" id="subject-checkbox-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Hoat dong trai nghiem huong nghiep (HDTNHN) Specific Section -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-compass text-amber-500"></i> Hoạt động trải nghiệm, Hướng nghiệp (HĐTNHN)
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Quy định tiết thứ mấy trong tuần để tự động tính tiết PPCT chuẩn xác.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-slate-700">Có dạy HĐTNHN không?</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-teach-hdtnhn" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+        </div>
+
+        <div id="hdtnhn-container" class="space-y-4 pt-2">
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
+            <i class="fa-solid fa-circle-info mr-1 text-amber-600"></i>
+            <strong>Lưu ý quan trọng:</strong> Tên lớp ghi ở đây (ví dụ: <code>12a4</code>) phải khớp chính xác với tên lớp điền trong Thời khóa biểu để hệ thống tự động xác định thứ tự bài dạy.
+          </div>
+
+          <div id="hdtnhn-classes-list" class="space-y-3">
+            <!-- Dynamic rows of classes for HDTNHN -->
+          </div>
+
+          <button type="button" id="btn-add-hdtnhn-class" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus text-emerald-600"></i> Thêm lớp dạy HĐTNHN
+          </button>
+        </div>
+      </div>
+
+      <!-- Syllabus (PPCT) Input per Subject -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="border-b border-slate-100 pb-3">
+          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-book-bookmark text-emerald-600"></i> Phân phối chương trình (PPCT) từng môn
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Cú pháp chuẩn: <code>&lt;Tiết PPCT&gt;&lt;Dấu cách&gt;&lt;Tên bài dạy&gt;</code> (mỗi tiết 1 dòng, ví dụ: <code>1 Este và Lipid</code>). Hệ thống sẽ căn cứ vào đây để điền tự động vào bảng kế hoạch.
+          </p>
+        </div>
+
+        <div id="ppct-boxes-container" class="space-y-6 pt-2">
+          <!-- Dynamically generated PPCT textareas for each selected subject -->
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button id="btn-save-subjects-tab" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu danh mục môn & PPCT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Timetable (Thời Khóa Biểu) -->
+    <div id="tab-timetable" class="tab-content hidden space-y-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-table-cells text-indigo-600"></i> Thời Khóa Biểu Giảng Dạy (Thứ 2 - Thứ 7)
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Chọn Môn dạy và điền Lớp tương ứng cho từng tiết. Ô trống sẽ tự động bỏ qua khi lập báo giảng.</p>
+          </div>
+          <button id="btn-clear-timetable" class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition">
+            <i class="fa-regular fa-trash-can mr-1"></i> Xóa rỗng TKB
+          </button>
+        </div>
+
+        <!-- Timetable Table -->
+        <div class="overflow-x-auto pb-2">
+          <table class="w-full text-xs text-left border-collapse border border-slate-200 min-w-[900px]">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold text-center border-b border-slate-200">
+                <th class="p-2.5 border-r border-slate-200 w-16">Buổi</th>
+                <th class="p-2.5 border-r border-slate-200 w-12">Tiết</th>
+                <th class="p-2.5 border-r border-slate-200">Thứ 2</th>
+                <th class="p-2.5 border-r border-slate-200">Thứ 3</th>
+                <th class="p-2.5 border-r border-slate-200">Thứ 4</th>
+                <th class="p-2.5 border-r border-slate-200">Thứ 5</th>
+                <th class="p-2.5 border-r border-slate-200">Thứ 6</th>
+                <th class="p-2.5">Thứ 7</th>
+              </tr>
+            </thead>
+            <tbody id="timetable-tbody">
+              <!-- Rendered by JS: Morning 5 periods, Afternoon 5 periods -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+          <span class="text-xs text-slate-500" id="tkb-summary-count">Tổng số tiết dạy trên TKB: 0 tiết</span>
+          <button id="btn-save-timetable-tab" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu Thời Khóa Biểu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Preview & Export to Excel -->
+    <div id="tab-export" class="tab-content hidden space-y-6">
+      <!-- Week configuration bar -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="border-b border-slate-100 pb-3">
+          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-emerald-600"></i> Cấu hình Tuần Giảng Dạy & Ngày Bắt Đầu
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Chọn tuần học (1-35) và ngày Thứ Hai đầu tuần để hệ thống lập lịch tự động.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tuần học (1 - 35)</label>
+            <select id="export-week-select" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-semibold text-blue-700">
+              <!-- Options 1 to 35 -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Ngày bắt đầu tuần (Thứ 2)</label>
+            <input type="date" id="export-start-date" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Ngày kết thúc tuần (Thứ 7)</label>
+            <input type="text" id="export-end-date-display" readonly class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600 font-medium">
+          </div>
+
+          <div class="flex items-end">
+            <button id="btn-recalculate-week" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-arrows-rotate"></i> Cập nhật & Tải lại dữ liệu
+            </button>
+          </div>
+        </div>
+
+        <!-- Initial lesson offset suggestion box -->
+        <div class="p-4 rounded-xl bg-blue-50/70 border border-blue-100 space-y-2">
+          <div class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> Đề xuất Tiết PPCT Bắt đầu cho Tuần này (có thể điều chỉnh trước khi tạo bảng):
+          </div>
+          <div id="start-lesson-offsets-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+            <!-- Dynamic inputs for starting lesson for each subject -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Interactive Schedule Preview Table -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-table text-blue-600"></i> Bảng Xem Trước Chi Tiết (Có thể sửa trực tiếp Tiết PPCT & Tên bài)
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Kiểm tra lại số tiết và tên bài trước khi xuất tệp Excel chính thức.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-add-preview-row" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+              <i class="fa-solid fa-plus text-emerald-600"></i> Thêm dòng tiết dạy
+            </button>
+            <button id="btn-export-excel-action" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg transition flex items-center gap-2">
+              <i class="fa-solid fa-file-excel text-lg"></i> XUẤT FILE EXCEL (.XLSX)
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse border border-slate-200 min-w-[950px]" id="preview-table">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 text-center">
+                <th class="p-2 border-r border-slate-200 w-16">Thứ</th>
+                <th class="p-2 border-r border-slate-200 w-24">Ngày/tháng</th>
+                <th class="p-2 border-r border-slate-200 w-20">Buổi/Tiết</th>
+                <th class="p-2 border-r border-slate-200 w-20">Lớp</th>
+                <th class="p-2 border-r border-slate-200 w-28">Môn học</th>
+                <th class="p-2 border-r border-slate-200 w-20">Tiết PPCT</th>
+                <th class="p-2 border-r border-slate-200">Tên bài dạy</th>
+                <th class="p-2 border-r border-slate-200 w-16">Tiết dạy</th>
+                <th class="p-2 border-r border-slate-200 w-20">Giờ định mức</th>
+                <th class="p-2 border-r border-slate-200 w-36">Công tác khác</th>
+                <th class="p-2 w-10">Xóa</th>
+              </tr>
+            </thead>
+            <tbody id="preview-table-tbody">
+              <!-- Rendered rows with editable PPCT and Lesson Name -->
+            </tbody>
+            <tfoot id="preview-table-tfoot" class="bg-slate-50 font-bold text-slate-800 border-t-2 border-slate-300">
+              <!-- Summary totals -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Admin User Management Modal -->
+  <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-users-gear"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Quản lý Tài khoản Giáo viên</h3>
+            <p class="text-xs text-slate-500">Chỉ tài khoản tối cao toapt989@gmail.com có quyền cấp tài khoản</p>
+          </div>
+        </div>
+        <button id="btn-close-admin-modal" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Create New User Form -->
+      <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Tạo tài khoản mới cho giáo viên</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Email giáo viên</label>
+            <input type="email" id="new-user-email" placeholder="gv.nguyenvan@school.edu.vn" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu ban đầu</label>
+            <input type="password" id="new-user-password" placeholder="Tối thiểu 6 ký tự" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Họ và tên giáo viên</label>
+            <input type="text" id="new-user-name" placeholder="Nguyễn Văn A" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Môn dạy chính</label>
+            <input type="text" id="new-user-subject" value="Hóa học" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+        </div>
+        <div class="flex justify-end pt-1">
+          <button id="btn-create-user" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus"></i> Tạo & Cấp quyền tài khoản
+          </button>
+        </div>
+      </div>
+
+      <!-- Authorized Users List -->
+      <div class="flex-1 overflow-y-auto space-y-2">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Danh sách tài khoản trong hệ thống</h4>
+        <div id="admin-user-list" class="space-y-2 text-xs">
+          <!-- Populated from Firestore -->
+          <div class="text-center py-4 text-slate-400">Đang tải danh sách tài khoản...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Scripts as ES Module -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc, 
+      collection, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6mb4G74n4SBCDLztxtbgvi0NzG-bbmD0",
+      authDomain: "tang-gio.firebaseapp.com",
+      projectId: "tang-gio",
+      storageBucket: "tang-gio.firebasestorage.app",
+      messagingSenderId: "830561435279",
+      appId: "1:830561435279:web:3984eac7aa9d53aaf5bafa",
+      measurementId: "G-7SBFQRYL10"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const ADMIN_EMAIL = "toapt989@gmail.com";
+
+    // Application State
+    const AppState = {
+      currentUser: null,
+      isAdmin: false,
+      profile: {
+        fullName: "Nguyễn Văn A",
+        mainSubject: "Hóa học",
+        salaryCoeff: 2.67,
+        allowance: 0.40,
+        department: "Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN",
+        standardHours: 17,
+        assignmentDesc: "Dạy Hóa học lớp 11a1 (2t), CĐ Hóa học 11a1 (1t), HĐTNHN 12a4 (1t), Chủ nhiệm lớp 12a3 (3t)",
+        headOfDepartment: "Võ Hoàng Sang",
+        vicePrincipal: "Ngô Hồng Ân",
+        principal: "Nguyễn Thành Tuấn",
+        extraTaskName: "Chủ nhiệm lớp 12a3",
+        extraTaskHours: 3
+      },
+      selectedSubjects: ["Hóa học", "CĐ Hóa học"],
+      hasHDTNHN: true,
+      hdtnhnClasses: [
+        { className: "12a4", periodIndexInWeek: 1 }
+      ],
+      ppctData: {
+        "Hóa học": "1 Este và lipid\n2 Xà phòng và chất giặt rửa tổng hợp\n3 Glucozơ và Fructozơ\n4 Saccarozơ và Mantozơ\n5 Tinh bột và Xenlulozơ\n6 Luyện tập Cacbohiđrat",
+        "CĐ Hóa học": "1 Chuyên đề Phản ứng hữu cơ\n2 Chuyên đề Đồng phân lập thể\n3 Bài tập Chuyên đề nâng cao",
+        "HĐTNHN": "1 Tìm hiểu xu hướng nghề nghiệp hiện đại\n2 Rèn luyện tính thích ứng nghề nghiệp\n3 Lập kế hoạch tài chính cá nhân"
+      },
+      timetable: {}, // key: "day-period", value: { subject: "Hóa học", className: "11a1" }
+      currentWeek: 1,
+      weekStartDate: "",
+      previewItems: []
+    };
+
+    // Full THPT Subject List
+    const ALL_SUBJECTS = [
+      "Toán", "Ngữ văn", "Tiếng Anh", "Vật lý", "Hóa học", "Sinh học",
+      "Lịch sử", "Địa lý", "GDCD", "GDKT&PL", "Tin học", "Công nghệ",
+      "Giáo dục thể chất", "GDQP-AN", "Âm nhạc", "Mỹ thuật",
+      "CĐ Toán", "CĐ Vật lý", "CĐ Hóa học", "CĐ Sinh học", "CĐ Ngữ văn",
+      "CĐ Lịch sử", "CĐ Địa lý", "CĐ GDKT&PL", "CĐ Tin học", "CĐ Công nghệ",
+      "CĐ Âm nhạc", "CĐ Mỹ thuật"
+    ];
+
+    function showToast(msg, type = "info") {
+      const toast = document.getElementById("toast");
+      const icon = document.getElementById("toast-icon");
+      const msgEl = document.getElementById("toast-msg");
+
+      if (type === "success") {
+        toast.className = "fixed bottom-5 right-5 z-50 flex items-center p-4 rounded-xl shadow-xl border text-sm max-w-md bg-emerald-50 border-emerald-300 text-emerald-900";
+        icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i>';
+      } else if (type === "error") {
+        toast.className = "fixed bottom-5 right-5 z-50 flex items-center p-4 rounded-xl shadow-xl border text-sm max-w-md bg-rose-50 border-rose-300 text-rose-900";
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-600"></i>';
+      } else {
+        toast.className = "fixed bottom-5 right-5 z-50 flex items-center p-4 rounded-xl shadow-xl border text-sm max-w-md bg-blue-50 border-blue-300 text-blue-900";
+        icon.innerHTML = '<i class="fa-solid fa-circle-info text-blue-600"></i>';
+      }
+
+      msgEl.textContent = msg;
+      toast.style.opacity = "1";
+      toast.style.transform = "translateY(0)";
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(24px)";
+      }, 4000);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        AppState.currentUser = user;
+        AppState.isAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+        document.getElementById("auth-screen").classList.add("hidden");
+        document.getElementById("app-screen").classList.remove("hidden");
+        document.getElementById("nav-user-panel").classList.remove("hidden");
+
+        document.getElementById("nav-user-email").textContent = user.email;
+        if (AppState.isAdmin) {
+          document.getElementById("admin-badge").classList.remove("hidden");
+          document.getElementById("btn-open-admin").classList.remove("hidden");
+        }
+
+        await loadUserDataFromCloud(user);
+        renderAllInterface();
+        showToast("Chào mừng " + (AppState.profile.fullName || user.email) + " đã đăng nhập!", "success");
+      } else {
+        AppState.currentUser = null;
+        AppState.isAdmin = false;
+        document.getElementById("auth-screen").classList.remove("hidden");
+        document.getElementById("app-screen").classList.add("hidden");
+        document.getElementById("nav-user-panel").classList.add("hidden");
+      }
+    });
+
+    // Detect Admin typing to show initial register button
+    const authEmailInput = document.getElementById("auth-email");
+    authEmailInput.addEventListener("input", (e) => {
+      const email = e.target.value.trim().toLowerCase();
+      const adminHint = document.getElementById("admin-reg-hint");
+      const btnAdminReg = document.getElementById("btn-admin-register");
+      if (email === ADMIN_EMAIL.toLowerCase()) {
+        adminHint.classList.remove("hidden");
+        btnAdminReg.classList.remove("hidden");
+        btnAdminReg.classList.add("flex");
+      } else {
+        adminHint.classList.add("hidden");
+        btnAdminReg.classList.add("hidden");
+        btnAdminReg.classList.remove("flex");
+      }
+    });
+
+    // Auth Form Submission
+    document.getElementById("auth-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = authEmailInput.value.trim();
+      const password = document.getElementById("auth-password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        // Special case: If admin email and not found, suggest registering
+        if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && err.code === "auth/user-not-found") {
+          showToast("Tài khoản quản trị viên toapt989@gmail.com chưa tạo mật khẩu. Vui lòng bấm 'Đăng ký mật khẩu Admin lần đầu' bên dưới!", "info");
+        } else {
+          showToast("Đăng nhập thất bại: " + err.message, "error");
+        }
+      }
+    });
+
+    // Admin first-time registration button
+    document.getElementById("btn-admin-register").addEventListener("click", async () => {
+      const email = authEmailInput.value.trim();
+      const password = document.getElementById("auth-password").value;
+      if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        showToast("Chức năng này chỉ dành riêng cho toapt989@gmail.com", "error");
+        return;
+      }
+      if (password.length < 6) {
+        showToast("Mật khẩu phải có tối thiểu 6 ký tự!", "error");
+        return;
+      }
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        // Save initial admin profile
+        await setDoc(doc(db, "users", cred.user.uid), {
+          email: email,
+          fullName: "Quản trị viên (toapt989)",
+          role: "admin",
+          createdAt: new Date().toISOString()
+        });
+        showToast("Đã khởi tạo tài khoản Quản trị viên thành công!", "success");
+      } catch (err) {
+        showToast("Lỗi đăng ký admin: " + err.message, "error");
+      }
+    });
+
+    // Logout
+    document.getElementById("btn-logout").addEventListener("click", async () => {
+      await signOut(auth);
+      showToast("Đã đăng xuất khỏi hệ thống.", "info");
+    });
+
+    async function loadUserDataFromCloud(user) {
+      try {
+        const userDocRef = doc(db, "teacher_profiles", user.uid);
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.profile) AppState.profile = { ...AppState.profile, ...data.profile };
+          if (data.selectedSubjects) AppState.selectedSubjects = data.selectedSubjects;
+          if (typeof data.hasHDTNHN !== "undefined") AppState.hasHDTNHN = data.hasHDTNHN;
+          if (data.hdtnhnClasses) AppState.hdtnhnClasses = data.hdtnhnClasses;
+          if (data.ppctData) AppState.ppctData = { ...AppState.ppctData, ...data.ppctData };
+          if (data.timetable) AppState.timetable = data.timetable;
+          if (data.currentWeek) AppState.currentWeek = data.currentWeek;
+          if (data.weekStartDate) AppState.weekStartDate = data.weekStartDate;
+        } else {
+          // Initialize default profile on first login
+          AppState.profile.fullName = user.displayName || user.email.split("@")[0];
+          await saveUserDataToCloud(false);
+        }
+      } catch (e) {
+        console.error("Lỗi tải dữ liệu cloud:", e);
+      }
+    }
+
+    async function saveUserDataToCloud(notify = true) {
+      if (!AppState.currentUser) return;
+      collectFormData();
+      try {
+        const userDocRef = doc(db, "teacher_profiles", AppState.currentUser.uid);
+        await setDoc(userDocRef, {
+          profile: AppState.profile,
+          selectedSubjects: AppState.selectedSubjects,
+          hasHDTNHN: AppState.hasHDTNHN,
+          hdtnhnClasses: AppState.hdtnhnClasses,
+          ppctData: AppState.ppctData,
+          timetable: AppState.timetable,
+          currentWeek: AppState.currentWeek,
+          weekStartDate: AppState.weekStartDate,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        if (notify) showToast("Đã lưu toàn bộ dữ liệu lên máy chủ thành công!", "success");
+      } catch (err) {
+        if (notify) showToast("Lỗi lưu dữ liệu: " + err.message, "error");
+      }
+    }
+
+    document.getElementById("btn-save-all-cloud").addEventListener("click", () => saveUserDataToCloud(true));
+    document.getElementById("btn-save-profile-tab").addEventListener("click", () => saveUserDataToCloud(true));
+    document.getElementById("btn-save-subjects-tab").addEventListener("click", () => saveUserDataToCloud(true));
+    document.getElementById("btn-save-timetable-tab").addEventListener("click", () => saveUserDataToCloud(true));
+
+    // Tab switching
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabButtons.forEach(b => {
+          b.classList.remove("active", "border-blue-600", "text-blue-600", "bg-white");
+          b.classList.add("border-transparent", "text-slate-500");
+        });
+        tabContents.forEach(c => c.classList.add("hidden"));
+
+        btn.classList.add("active", "border-blue-600", "text-blue-600", "bg-white");
+        btn.classList.remove("border-transparent", "text-slate-500");
+        const target = btn.dataset.tab;
+        document.getElementById(target).classList.remove("hidden");
+
+        if (target === "tab-export") {
+          calculateWeeklySchedule();
+        }
+      });
+    });
+
+    function collectFormData() {
+      // Profile Tab
+      AppState.profile.fullName = document.getElementById("prof-name").value.trim();
+      AppState.profile.department = document.getElementById("prof-department").value.trim();
+      AppState.profile.standardHours = parseInt(document.getElementById("prof-standard-hours").value) || 17;
+      AppState.profile.salaryCoeff = parseFloat(document.getElementById("prof-salary-coeff").value) || 2.67;
+      AppState.profile.allowance = parseFloat(document.getElementById("prof-allowance").value) || 0.40;
+      AppState.profile.mainSubject = document.getElementById("prof-main-subject").value.trim() || "Hóa học";
+      AppState.profile.assignmentDesc = document.getElementById("prof-assignment-desc").value.trim();
+
+      AppState.profile.extraTaskName = document.getElementById("prof-extra-task-name").value.trim();
+      AppState.profile.extraTaskHours = parseInt(document.getElementById("prof-extra-task-hours").value) || 0;
+
+      AppState.profile.headOfDepartment = document.getElementById("sign-head-dep").value.trim();
+      AppState.profile.vicePrincipal = document.getElementById("sign-vice-prin").value.trim();
+      AppState.profile.principal = document.getElementById("sign-principal").value.trim();
+
+      // HDTNHN
+      AppState.hasHDTNHN = document.getElementById("toggle-teach-hdtnhn").checked;
+      const hdtnhnRows = document.querySelectorAll(".hdtnhn-class-row");
+      const classesList = [];
+      hdtnhnRows.forEach(row => {
+        const clsName = row.querySelector(".hdtnhn-class-name").value.trim();
+        const periodIdx = parseInt(row.querySelector(".hdtnhn-period-select").value) || 1;
+        if (clsName) {
+          classesList.push({ className: clsName, periodIndexInWeek: periodIdx });
+        }
+      });
+      AppState.hdtnhnClasses = classesList;
+
+      // PPCT Boxes
+      document.querySelectorAll(".ppct-textarea").forEach(textarea => {
+        const sub = textarea.dataset.subject;
+        AppState.ppctData[sub] = textarea.value;
+      });
+
+      // Timetable
+      const newTkb = {};
+      document.querySelectorAll(".tkb-cell-subject").forEach(subSelect => {
+        const key = subSelect.dataset.key;
+        const clsInput = document.querySelector(`.tkb-cell-class[data-key="${key}"]`);
+        const subVal = subSelect.value;
+        const clsVal = clsInput ? clsInput.value.trim() : "";
+        if (subVal && clsVal) {
+          newTkb[key] = { subject: subVal, className: clsVal };
+        }
+      });
+      AppState.timetable = newTkb;
+
+      // Export week
+      AppState.currentWeek = parseInt(document.getElementById("export-week-select").value) || 1;
+      AppState.weekStartDate = document.getElementById("export-start-date").value;
+    }
+
+    function renderAllInterface() {
+      // 1. Fill Profile fields
+      document.getElementById("prof-name").value = AppState.profile.fullName || "";
+      document.getElementById("prof-department").value = AppState.profile.department;
+      document.getElementById("prof-standard-hours").value = AppState.profile.standardHours;
+      document.getElementById("prof-salary-coeff").value = AppState.profile.salaryCoeff;
+      document.getElementById("prof-allowance").value = AppState.profile.allowance;
+      document.getElementById("prof-main-subject").value = AppState.profile.mainSubject;
+      document.getElementById("prof-assignment-desc").value = AppState.profile.assignmentDesc;
+
+      document.getElementById("prof-extra-task-name").value = AppState.profile.extraTaskName;
+      document.getElementById("prof-extra-task-hours").value = AppState.profile.extraTaskHours;
+
+      document.getElementById("sign-head-dep").value = AppState.profile.headOfDepartment;
+      document.getElementById("sign-vice-prin").value = AppState.profile.vicePrincipal;
+      document.getElementById("sign-principal").value = AppState.profile.principal;
+
+      // Banner update
+      document.getElementById("nav-user-name").textContent = AppState.profile.fullName || "Giáo viên";
+      document.getElementById("banner-teacher-name").textContent = "Thầy/Cô: " + (AppState.profile.fullName || "Chưa đặt tên");
+      document.getElementById("banner-subject-badge").textContent = AppState.profile.mainSubject;
+      document.getElementById("banner-info-summary").textContent = `Tổ: ${AppState.profile.department} | Định mức: ${AppState.profile.standardHours} tiết/tuần`;
+
+      // 2. Render Subject Checkboxes
+      renderSubjectCheckboxes();
+
+      // 3. Render HDTNHN
+      document.getElementById("toggle-teach-hdtnhn").checked = AppState.hasHDTNHN;
+      renderHDTNHNRows();
+
+      // 4. Render PPCT Textareas
+      renderPPCTTextareas();
+
+      // 5. Render Timetable Matrix
+      renderTimetableTable();
+
+      // 6. Setup Week Selector & Default Monday
+      setupWeekDates();
+    }
+
+    function renderSubjectCheckboxes() {
+      const container = document.getElementById("subject-checkbox-grid");
+      container.innerHTML = "";
+
+      ALL_SUBJECTS.forEach(sub => {
+        const isChecked = AppState.selectedSubjects.includes(sub);
+        const label = document.createElement("label");
+        label.className = `flex items-center p-2 rounded-xl border text-xs cursor-pointer select-none transition ${
+          isChecked ? "bg-blue-50/80 border-blue-300 text-blue-900 font-semibold" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+        }`;
+        label.innerHTML = `
+          <input type="checkbox" value="${sub}" class="subject-cb mr-2 rounded text-blue-600 focus:ring-blue-500" ${isChecked ? "checked" : ""}>
+          <span class="truncate">${sub}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      updateSelectedSubjectCounter();
+
+      // Listen for checkbox changes
+      container.querySelectorAll(".subject-cb").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const checked = Array.from(container.querySelectorAll(".subject-cb:checked")).map(c => c.value);
+          AppState.selectedSubjects = checked;
+          updateSelectedSubjectCounter();
+          renderSubjectCheckboxes();
+          renderPPCTTextareas();
+          renderTimetableTable(); // update select options in TKB
+        });
+      });
+    }
+
+    function updateSelectedSubjectCounter() {
+      const count = AppState.selectedSubjects.length + (AppState.hasHDTNHN ? 1 : 0);
+      document.getElementById("selected-subjects-counter").textContent = `Đã chọn: ${count} môn (gồm cả HĐTNHN)`;
+    }
+
+    document.getElementById("toggle-teach-hdtnhn").addEventListener("change", (e) => {
+      AppState.hasHDTNHN = e.target.checked;
+      document.getElementById("hdtnhn-container").classList.toggle("opacity-50", !AppState.hasHDTNHN);
+      document.getElementById("hdtnhn-container").classList.toggle("pointer-events-none", !AppState.hasHDTNHN);
+      updateSelectedSubjectCounter();
+      renderPPCTTextareas();
+      renderTimetableTable();
+    });
+
+    function renderHDTNHNRows() {
+      const listEl = document.getElementById("hdtnhn-classes-list");
+      listEl.innerHTML = "";
+
+      AppState.hdtnhnClasses.forEach((item, idx) => {
+        const row = document.createElement("div");
+        row.className = "hdtnhn-class-row flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200";
+        row.innerHTML = `
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Tên lớp HĐTNHN</label>
+            <input type="text" value="${item.className}" placeholder="Ví dụ: 12a4" class="hdtnhn-class-name w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold uppercase">
+          </div>
+          <div class="flex-1 min-w-[180px]">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Dạy tiết thứ mấy trong tuần?</label>
+            <select class="hdtnhn-period-select w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs">
+              <option value="1" ${item.periodIndexInWeek === 1 ? "selected" : ""}>Tiết thứ 1 trong tuần</option>
+              <option value="2" ${item.periodIndexInWeek === 2 ? "selected" : ""}>Tiết thứ 2 trong tuần</option>
+              <option value="3" ${item.periodIndexInWeek === 3 ? "selected" : ""}>Tiết thứ 3 trong tuần</option>
+            </select>
+          </div>
+          <div class="pt-4">
+            <button type="button" class="btn-remove-hdtnhn text-rose-500 hover:text-rose-700 p-2 text-sm" title="Xóa lớp">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+        listEl.appendChild(row);
+
+        row.querySelector(".btn-remove-hdtnhn").addEventListener("click", () => {
+          AppState.hdtnhnClasses.splice(idx, 1);
+          renderHDTNHNRows();
+        });
+      });
+    }
+
+    document.getElementById("btn-add-hdtnhn-class").addEventListener("click", () => {
+      AppState.hdtnhnClasses.push({ className: "12a1", periodIndexInWeek: 1 });
+      renderHDTNHNRows();
+    });
+
+    function renderPPCTTextareas() {
+      const container = document.getElementById("ppct-boxes-container");
+      container.innerHTML = "";
+
+      const subjectsToRender = [...AppState.selectedSubjects];
+      if (AppState.hasHDTNHN && !subjectsToRender.includes("HĐTNHN")) {
+        subjectsToRender.push("HĐTNHN");
+      }
+
+      if (subjectsToRender.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Chưa có môn nào được chọn. Hãy tích chọn môn ở mục trên.</div>';
+        return;
+      }
+
+      subjectsToRender.forEach(sub => {
+        const defaultSample = AppState.ppctData[sub] || `1 Tiết 1 bài học môn ${sub}\n2 Tiết 2 bài học môn ${sub}\n3 Tiết 3 bài học môn ${sub}`;
+        const box = document.createElement("div");
+        box.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2";
+        box.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+              <h4 class="text-sm font-bold text-slate-800">Phân phối chương trình: <span class="text-blue-700">${sub}</span></h4>
+            </div>
+            <span class="text-[11px] text-slate-500">Mỗi tiết 1 dòng (&lt;Tiết&gt; &lt;Tên bài&gt;)</span>
+          </div>
+          <textarea rows="5" data-subject="${sub}" class="ppct-textarea w-full p-3 rounded-xl border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-blue-500 bg-white leading-relaxed" placeholder="1 Tên bài dạy tiết 1&#10;2 Tên bài dạy tiết 2...">${defaultSample}</textarea>
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    function renderTimetableTable() {
+      const tbody = document.getElementById("timetable-tbody");
+      tbody.innerHTML = "";
+
+      const availableSubjects = [...AppState.selectedSubjects];
+      if (AppState.hasHDTNHN && !availableSubjects.includes("HĐTNHN")) {
+        availableSubjects.push("HĐTNHN");
+      }
+
+      const days = [
+        { label: "Thứ 2", val: 2 },
+        { label: "Thứ 3", val: 3 },
+        { label: "Thứ 4", val: 4 },
+        { label: "Thứ 5", val: 5 },
+        { label: "Thứ 6", val: 6 },
+        { label: "Thứ 7", val: 7 }
+      ];
+
+      // Sáng (Tiết 1 - 5)
+      for (let p = 1; p <= 5; p++) {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50/70 border-b border-slate-200";
+
+        if (p === 1) {
+          tr.innerHTML += `<td rowspan="5" class="p-2 font-bold text-center bg-blue-50/50 text-blue-900 border-r border-slate-200 align-middle uppercase text-[11px]">Sáng</td>`;
+        }
+        tr.innerHTML += `<td class="p-2 font-semibold text-center bg-slate-50 border-r border-slate-200">${p}</td>`;
+
+        days.forEach(day => {
+          const key = `${day.val}-${p}`;
+          const currentVal = AppState.timetable[key] || { subject: "", className: "" };
+          tr.appendChild(createTkbCell(key, currentVal, availableSubjects));
+        });
+
+        tbody.appendChild(tr);
+      }
+
+      // Chiều (Tiết 1 - 5, tức là Tiết 6 - 10)
+      for (let p = 6; p <= 10; p++) {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50/70 border-b border-slate-200";
+
+        if (p === 6) {
+          tr.innerHTML += `<td rowspan="5" class="p-2 font-bold text-center bg-amber-50/50 text-amber-900 border-r border-slate-200 align-middle uppercase text-[11px]">Chiều</td>`;
+        }
+        tr.innerHTML += `<td class="p-2 font-semibold text-center bg-slate-50 border-r border-slate-200">${p - 5}</td>`;
+
+        days.forEach(day => {
+          const key = `${day.val}-${p}`;
+          const currentVal = AppState.timetable[key] || { subject: "", className: "" };
+          tr.appendChild(createTkbCell(key, currentVal, availableSubjects));
+        });
+
+        tbody.appendChild(tr);
+      }
+
+      updateTkbCountSummary();
+    }
+
+    function createTkbCell(key, currentVal, availableSubjects) {
+      const td = document.createElement("td");
+      td.className = "p-1.5 border-r border-slate-200 min-w-[130px]";
+
+      let subOptions = `<option value="">-- Trống --</option>`;
+      availableSubjects.forEach(s => {
+        subOptions += `<option value="${s}" ${currentVal.subject === s ? "selected" : ""}>${s}</option>`;
+      });
+
+      td.innerHTML = `
+        <div class="space-y-1">
+          <select data-key="${key}" class="tkb-cell-subject w-full px-1.5 py-1 rounded border border-slate-300 text-[11px] focus:ring-1 focus:ring-blue-500">
+            ${subOptions}
+          </select>
+          <input type="text" data-key="${key}" value="${currentVal.className || ""}" placeholder="Lớp (11a1...)" class="tkb-cell-class w-full px-1.5 py-1 rounded border border-slate-300 text-[11px] uppercase font-medium">
+        </div>
+      `;
+
+      td.querySelector(".tkb-cell-subject").addEventListener("change", updateTkbCountSummary);
+      td.querySelector(".tkb-cell-class").addEventListener("input", updateTkbCountSummary);
+      return td;
+    }
+
+    function updateTkbCountSummary() {
+      let count = 0;
+      document.querySelectorAll(".tkb-cell-subject").forEach(sel => {
+        const key = sel.dataset.key;
+        const cls = document.querySelector(`.tkb-cell-class[data-key="${key}"]`);
+        if (sel.value && cls && cls.value.trim()) {
+          count++;
+        }
+      });
+      document.getElementById("tkb-summary-count").textContent = `Tổng số tiết dạy trên TKB: ${count} tiết`;
+    }
+
+    document.getElementById("btn-clear-timetable").addEventListener("click", () => {
+      AppState.timetable = {};
+      renderTimetableTable();
+      showToast("Đã làm trống toàn bộ thời khóa biểu.", "info");
+    });
+
+    function setupWeekDates() {
+      const weekSelect = document.getElementById("export-week-select");
+      weekSelect.innerHTML = "";
+      for (let w = 1; w <= 35; w++) {
+        const opt = document.createElement("option");
+        opt.value = w;
+        opt.textContent = `Tuần ${w}`;
+        if (w === (AppState.currentWeek || 1)) opt.selected = true;
+        weekSelect.appendChild(opt);
+      }
+
+      // Default to Monday of current week if none set
+      if (!AppState.weekStartDate) {
+        const today = new Date();
+        const day = today.getDay(); // 0 is Sun, 1 is Mon...
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(today.setDate(diff));
+        AppState.weekStartDate = monday.toISOString().split("T")[0];
+      }
+      document.getElementById("export-start-date").value = AppState.weekStartDate;
+      updateEndDateDisplay();
+
+      weekSelect.addEventListener("change", () => {
+        AppState.currentWeek = parseInt(weekSelect.value);
+        renderStartLessonOffsets();
+        calculateWeeklySchedule();
+      });
+
+      document.getElementById("export-start-date").addEventListener("change", (e) => {
+        AppState.weekStartDate = e.target.value;
+        updateEndDateDisplay();
+        calculateWeeklySchedule();
+      });
+
+      renderStartLessonOffsets();
+    }
+
+    function updateEndDateDisplay() {
+      if (!AppState.weekStartDate) return;
+      const mon = new Date(AppState.weekStartDate);
+      const sat = new Date(mon);
+      sat.setDate(mon.getDate() + 5);
+      const satStr = `${String(sat.getDate()).padStart(2, "0")}/${String(sat.getMonth() + 1).padStart(2, "0")}/${sat.getFullYear()}`;
+      document.getElementById("export-end-date-display").value = `Thứ 7 (${satStr})`;
+    }
+
+    // Default start lesson calculation rules as requested
+    function calculateDefaultStartLesson(subject, weekNumber) {
+      const sub = subject.trim();
+      const groupA = ["Toán", "Ngữ văn", "Tiếng Anh", "HĐTNHN"];
+      const groupB = ["Lịch sử", "Giáo dục thể chất", "Vật lý", "Hóa học", "Sinh học", "Tin học", "Công nghệ", "Địa lý", "Giáo dục kinh tế pháp luật", "GDKT&PL", "Âm nhạc", "Mỹ thuật"];
+
+      if (groupA.includes(sub)) {
+        return Math.max(1, weekNumber * 3 - 2);
+      } else if (groupB.includes(sub)) {
+        return Math.max(1, weekNumber * 2 - 1);
+      } else {
+        // GDQP-AN, Chuyên đề CĐ... = tuần
+        return Math.max(1, weekNumber);
+      }
+    }
+
+    function renderStartLessonOffsets() {
+      const container = document.getElementById("start-lesson-offsets-grid");
+      container.innerHTML = "";
+      const week = parseInt(document.getElementById("export-week-select").value) || 1;
+
+      const subjectsInUse = [...AppState.selectedSubjects];
+      if (AppState.hasHDTNHN && !subjectsInUse.includes("HĐTNHN")) {
+        subjectsInUse.push("HĐTNHN");
+      }
+
+      subjectsInUse.forEach(sub => {
+        const defaultVal = calculateDefaultStartLesson(sub, week);
+        const div = document.createElement("div");
+        div.className = "p-2 rounded-lg bg-white border border-blue-200 shadow-xs";
+        div.innerHTML = `
+          <label class="block text-[11px] font-semibold text-slate-700 truncate" title="${sub}">${sub}</label>
+          <input type="number" data-subject="${sub}" min="1" max="200" value="${defaultVal}" class="start-lesson-input w-full px-2 py-1 rounded border border-slate-300 text-xs font-bold text-blue-700">
+        `;
+        div.querySelector(".start-lesson-input").addEventListener("change", () => {
+          calculateWeeklySchedule();
+        });
+        container.appendChild(div);
+      });
+    }
+
+    function parsePPCTMap(subject) {
+      const raw = AppState.ppctData[subject] || "";
+      const lines = raw.split("\n");
+      const map = {};
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const firstSpace = trimmed.indexOf(" ");
+        if (firstSpace !== -1) {
+          const num = parseInt(trimmed.substring(0, firstSpace));
+          const name = trimmed.substring(firstSpace + 1).trim();
+          if (!isNaN(num)) {
+            map[num] = name;
+          }
+        } else {
+          // If just a number or text
+          const num = parseInt(trimmed);
+          if (!isNaN(num)) map[num] = `Bài học tiết ${num}`;
+        }
+      });
+      return map;
+    }
+
+    function calculateWeeklySchedule() {
+      collectFormData();
+      const week = AppState.currentWeek || 1;
+      const startDateStr = AppState.weekStartDate;
+      const startDate = startDateStr ? new Date(startDateStr) : new Date();
+
+      // Read start lesson inputs
+      const startLessons = {};
+      document.querySelectorAll(".start-lesson-input").forEach(inp => {
+        startLessons[inp.dataset.subject] = parseInt(inp.value) || 1;
+      });
+
+      // Subject counters for incrementing lesson numbers during the week
+      const subjectCurrentLesson = { ...startLessons };
+
+      // Cache PPCT maps
+      const ppctMaps = {};
+      Object.keys(AppState.ppctData).forEach(sub => {
+        ppctMaps[sub] = parsePPCTMap(sub);
+      });
+
+      const dayNames = {
+        2: "Thứ hai",
+        3: "Thứ ba",
+        4: "Thứ tư",
+        5: "Thứ năm",
+        6: "Thứ sáu",
+        7: "Thứ bảy"
+      };
+
+      const rows = [];
+      let totalStandardApplied = 0;
+      const standardLimit = AppState.profile.standardHours || 17;
+
+      // Scan timetable Monday to Saturday, periods 1 to 10
+      for (let dayNum = 2; dayNum <= 7; dayNum++) {
+        // Calculate date of this day
+        const offsetDays = dayNum - 2; // Monday is +0
+        const rowDate = new Date(startDate);
+        rowDate.setDate(startDate.getDate() + offsetDays);
+        const dateFormatted = `${String(rowDate.getDate()).padStart(2, "0")}/${String(rowDate.getMonth() + 1).padStart(2, "0")}/${rowDate.getFullYear()}`;
+
+        for (let p = 1; p <= 10; p++) {
+          const key = `${dayNum}-${p}`;
+          const cell = AppState.timetable[key];
+
+          if (cell && cell.subject && cell.className) {
+            const sub = cell.subject;
+            const cls = cell.className.toUpperCase();
+            let lessonNum = 1;
+
+            if (sub === "HĐTNHN") {
+              // Check class offset rule
+              const baseHDTN = startLessons["HĐTNHN"] || calculateDefaultStartLesson("HĐTNHN", week);
+              const foundClass = AppState.hdtnhnClasses.find(c => c.className.toUpperCase() === cls);
+              if (foundClass) {
+                // Rule: tiet 1 = base, tiet 2 = base + 1, tiet 3 = base + 2
+                lessonNum = baseHDTN + (foundClass.periodIndexInWeek - 1);
+              } else {
+                lessonNum = baseHDTN;
+              }
+            } else {
+              if (typeof subjectCurrentLesson[sub] === "undefined") {
+                subjectCurrentLesson[sub] = calculateDefaultStartLesson(sub, week);
+              }
+              lessonNum = subjectCurrentLesson[sub];
+              subjectCurrentLesson[sub]++; // Increment for next period of this subject
+            }
+
+            // Get lesson title
+            const subMap = ppctMaps[sub] || {};
+            const lessonTitle = subMap[lessonNum] || `Bài học tiết ${lessonNum} môn ${sub}`;
+
+            // Standard quota assignment (number 1 until standardHours is reached)
+            let standardVal = "";
+            if (totalStandardApplied < standardLimit) {
+              standardVal = 1;
+              totalStandardApplied += 1;
+            }
+
+            const periodLabel = (p <= 5) ? `Sáng - T${p}` : `Chiều - T${p - 5}`;
+
+            rows.push({
+              id: "row-" + Math.random().toString(36).substring(2, 9),
+              dayName: dayNames[dayNum],
+              dateStr: dateFormatted,
+              periodLabel: periodLabel,
+              className: cls,
+              subject: sub,
+              lessonNum: lessonNum,
+              lessonTitle: lessonTitle,
+              teachingHours: 1,
+              standardQuota: standardVal,
+              extraTaskDesc: "",
+              extraTaskHours: 0
+            });
+          }
+        }
+      }
+
+      // Add extra task (Kiêm nhiệm) to the first row or as dedicated line
+      if (AppState.profile.extraTaskHours > 0) {
+        if (rows.length > 0) {
+          rows[0].extraTaskDesc = `${AppState.profile.extraTaskName} (${AppState.profile.extraTaskHours}t)`;
+          rows[0].extraTaskHours = AppState.profile.extraTaskHours;
+        } else {
+          // If no teaching periods, add row for extra task
+          rows.push({
+            id: "row-extra",
+            dayName: "Thứ hai",
+            dateStr: `${String(startDate.getDate()).padStart(2, "0")}/${String(startDate.getMonth() + 1).padStart(2, "0")}/${startDate.getFullYear()}`,
+            periodLabel: "Kiêm nhiệm",
+            className: "-",
+            subject: "Công tác khác",
+            lessonNum: "-",
+            lessonTitle: AppState.profile.extraTaskName,
+            teachingHours: 0,
+            standardQuota: "",
+            extraTaskDesc: `${AppState.profile.extraTaskName} (${AppState.profile.extraTaskHours}t)`,
+            extraTaskHours: AppState.profile.extraTaskHours
+          });
+        }
+      }
+
+      AppState.previewItems = rows;
+      renderPreviewTable();
+    }
+
+    document.getElementById("btn-recalculate-week").addEventListener("click", () => {
+      calculateWeeklySchedule();
+      showToast("Đã cập nhật lại bảng kế hoạch tuần thành công!", "success");
+    });
+
+    function renderPreviewTable() {
+      const tbody = document.getElementById("preview-table-tbody");
+      const tfoot = document.getElementById("preview-table-tfoot");
+      tbody.innerHTML = "";
+
+      if (AppState.previewItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-slate-400">Thời khóa biểu chưa có tiết dạy nào được chọn. Hãy vào mục "3. Thời khóa biểu" để điền môn và lớp.</td></tr>`;
+        tfoot.innerHTML = "";
+        return;
+      }
+
+      let sumTeaching = 0;
+      let sumStandard = 0;
+      let sumExtra = 0;
+
+      AppState.previewItems.forEach((row, idx) => {
+        sumTeaching += Number(row.teachingHours) || 0;
+        sumStandard += Number(row.standardQuota) || 0;
+        sumExtra += Number(row.extraTaskHours) || 0;
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 border-b border-slate-200 text-slate-700";
+        tr.innerHTML = `
+          <td class="p-2 border-r border-slate-200 text-center font-medium">${row.dayName}</td>
+          <td class="p-2 border-r border-slate-200 text-center">${row.dateStr}</td>
+          <td class="p-2 border-r border-slate-200 text-center">${row.periodLabel}</td>
+          <td class="p-2 border-r border-slate-200 text-center font-bold text-blue-700">${row.className}</td>
+          <td class="p-2 border-r border-slate-200 font-medium">${row.subject}</td>
+          <td class="p-1.5 border-r border-slate-200 text-center">
+            <input type="text" value="${row.lessonNum}" class="row-edit-lesson-num w-14 px-1 py-1 text-center font-bold rounded border border-slate-300 text-xs">
+          </td>
+          <td class="p-1.5 border-r border-slate-200">
+            <input type="text" value="${row.lessonTitle}" class="row-edit-lesson-title w-full px-2 py-1 rounded border border-slate-300 text-xs">
+          </td>
+          <td class="p-2 border-r border-slate-200 text-center font-semibold">${row.teachingHours}</td>
+          <td class="p-1.5 border-r border-slate-200 text-center">
+            <input type="number" min="0" max="1" value="${row.standardQuota === "" ? "" : row.standardQuota}" class="row-edit-standard w-12 px-1 py-1 text-center font-bold text-indigo-700 rounded border border-slate-300 text-xs">
+          </td>
+          <td class="p-1.5 border-r border-slate-200">
+            <input type="text" value="${row.extraTaskDesc || ""}" placeholder="Số tiết hoặc công việc..." class="row-edit-extra-desc w-full px-1.5 py-1 rounded border border-slate-300 text-xs">
+          </td>
+          <td class="p-2 text-center">
+            <button class="btn-delete-row text-rose-500 hover:text-rose-700 p-1">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+
+        // Event listeners for inline modification
+        tr.querySelector(".row-edit-lesson-num").addEventListener("input", (e) => {
+          row.lessonNum = e.target.value;
+          // Auto update lesson title from PPCT map if matching
+          const map = parsePPCTMap(row.subject);
+          if (map[parseInt(e.target.value)]) {
+            row.lessonTitle = map[parseInt(e.target.value)];
+            tr.querySelector(".row-edit-lesson-title").value = row.lessonTitle;
+          }
+        });
+
+        tr.querySelector(".row-edit-lesson-title").addEventListener("input", (e) => {
+          row.lessonTitle = e.target.value;
+        });
+
+        tr.querySelector(".row-edit-standard").addEventListener("input", (e) => {
+          row.standardQuota = e.target.value === "" ? "" : Number(e.target.value);
+          renderPreviewFooter();
+        });
+
+        tr.querySelector(".row-edit-extra-desc").addEventListener("input", (e) => {
+          row.extraTaskDesc = e.target.value;
+        });
+
+        tr.querySelector(".btn-delete-row").addEventListener("click", () => {
+          AppState.previewItems.splice(idx, 1);
+          renderPreviewTable();
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      renderPreviewFooter();
+    }
+
+    function renderPreviewFooter() {
+      const tfoot = document.getElementById("preview-table-tfoot");
+      let sumTeaching = 0;
+      let sumStandard = 0;
+      let sumExtra = AppState.profile.extraTaskHours || 0;
+
+      AppState.previewItems.forEach(r => {
+        sumTeaching += Number(r.teachingHours) || 0;
+        sumStandard += Number(r.standardQuota) || 0;
+      });
+
+      const totalOverall = sumTeaching + sumExtra;
+      const extraHoursPay = Math.max(0, totalOverall - (AppState.profile.standardHours || 17));
+
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100 border-t-2 border-slate-300">
+          <td colspan="7" class="p-2.5 text-right uppercase font-bold text-slate-700">Tổng cộng số tiết:</td>
+          <td class="p-2.5 text-center font-bold text-blue-700">${sumTeaching}</td>
+          <td class="p-2.5 text-center font-bold text-indigo-700">${sumStandard}</td>
+          <td class="p-2.5 text-center font-bold text-emerald-700">${sumExtra}</td>
+          <td></td>
+        </tr>
+        <tr class="bg-indigo-50 text-indigo-900">
+          <td colspan="7" class="p-2 text-right font-bold">TỔNG CỘNG CHUNG (Giờ dạy + Kiêm nhiệm) / TĂNG GIỜ (Thừa giờ):</td>
+          <td colspan="2" class="p-2 text-center font-extrabold text-sm text-indigo-700">Tổng: ${totalOverall} tiết</td>
+          <td colspan="2" class="p-2 text-center font-extrabold text-sm text-emerald-700">Thừa: ${extraHoursPay} tiết</td>
+        </tr>
+      `;
+    }
+
+    // Add manual row button
+    document.getElementById("btn-add-preview-row").addEventListener("click", () => {
+      AppState.previewItems.push({
+        id: "manual-" + Date.now(),
+        dayName: "Thứ hai",
+        dateStr: "",
+        periodLabel: "Bổ sung",
+        className: "11A1",
+        subject: AppState.profile.mainSubject || "Hóa học",
+        lessonNum: "1",
+        lessonTitle: "Bài giảng tự chọn / Ôn tập",
+        teachingHours: 1,
+        standardQuota: "",
+        extraTaskDesc: "",
+        extraTaskHours: 0
+      });
+      renderPreviewTable();
+    });
+
+    async function exportToExcel() {
+      if (AppState.previewItems.length === 0) {
+        showToast("Không có dữ liệu để xuất Excel. Hãy tạo bảng xem trước trước!", "error");
+        return;
+      }
+
+      showToast("Đang khởi tạo file Excel với đầy đủ định dạng chuẩn...", "info");
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Hệ thống Báo giảng Sư phạm";
+      workbook.lastModifiedBy = AppState.profile.fullName;
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet(`Tuần ${AppState.currentWeek}`);
+
+      // Page setup for printing
+      worksheet.pageSetup.orientation = 'landscape';
+      worksheet.pageSetup.paperSize = 9; // A4
+      worksheet.pageSetup.fitToPage = true;
+      worksheet.pageSetup.fitToWidth = 1;
+      worksheet.pageSetup.fitToHeight = 0;
+
+      // Set Column Widths
+      worksheet.columns = [
+        { width: 12 }, // A: Thứ
+        { width: 14 }, // B: Ngày/tháng
+        { width: 14 }, // C: Buổi/Tiết TKB
+        { width: 10 }, // D: Lớp
+        { width: 16 }, // E: Môn học
+        { width: 12 }, // F: Tiết PPCT
+        { width: 38 }, // G: Tên bài dạy
+        { width: 12 }, // H: Tiết dạy
+        { width: 14 }, // I: Giờ định mức
+        { width: 26 }, // J: Công tác khác
+      ];
+
+      // Style Helpers
+      const fontTimes = { name: "Times New Roman", size: 11 };
+      const fontTimesBold = { name: "Times New Roman", size: 11, bold: true };
+      const borderThin = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" }
+      };
+
+      // Header row 1: Quốc hiệu tiêu ngữ & Tên đơn vị
+      worksheet.mergeCells("A1:E1");
+      worksheet.getCell("A1").value = "SỞ GIÁO DỤC VÀ ĐÀO TẠO";
+      worksheet.getCell("A1").font = { name: "Times New Roman", size: 11, bold: true };
+      worksheet.getCell("A1").alignment = { horizontal: "center" };
+
+      worksheet.mergeCells("F1:J1");
+      worksheet.getCell("F1").value = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM";
+      worksheet.getCell("F1").font = { name: "Times New Roman", size: 11, bold: true };
+      worksheet.getCell("F1").alignment = { horizontal: "center" };
+
+      // Header row 2
+      worksheet.mergeCells("A2:E2");
+      worksheet.getCell("A2").value = "TRƯỜNG THPT...";
+      worksheet.getCell("A2").font = { name: "Times New Roman", size: 11 };
+      worksheet.getCell("A2").alignment = { horizontal: "center" };
+
+      worksheet.mergeCells("F2:J2");
+      worksheet.getCell("F2").value = "Độc lập - Tự do - Hạnh phúc";
+      worksheet.getCell("F2").font = { name: "Times New Roman", size: 11, bold: true, underline: true };
+      worksheet.getCell("F2").alignment = { horizontal: "center" };
+
+      // Title
+      worksheet.addRow([]);
+      worksheet.mergeCells("A4:J4");
+      const titleCell = worksheet.getCell("A4");
+      titleCell.value = `BẢNG KÊ TIẾT DẠY VÀ CÔNG TÁC TUẦN ${AppState.currentWeek}`;
+      titleCell.font = { name: "Times New Roman", size: 14, bold: true };
+      titleCell.alignment = { horizontal: "center" };
+
+      // Subtitle with date
+      worksheet.mergeCells("A5:J5");
+      const subTitleCell = worksheet.getCell("A5");
+      const startD = AppState.weekStartDate ? new Date(AppState.weekStartDate) : new Date();
+      const endD = new Date(startD);
+      endD.setDate(startD.getDate() + 5);
+      subTitleCell.value = `(Từ ngày ${String(startD.getDate()).padStart(2, "0")}/${String(startD.getMonth() + 1).padStart(2, "0")}/${startD.getFullYear()} đến ngày ${String(endD.getDate()).padStart(2, "0")}/${String(endD.getMonth() + 1).padStart(2, "0")}/${endD.getFullYear()})`;
+      subTitleCell.font = { name: "Times New Roman", size: 11, italic: true };
+      subTitleCell.alignment = { horizontal: "center" };
+
+      // Info rows
+      worksheet.addRow([]); // Blank row 6
+
+      // Row 7
+      worksheet.getCell("A7").value = "Họ và tên giáo viên:";
+      worksheet.getCell("A7").font = fontTimesBold;
+      worksheet.mergeCells("B7:E7");
+      worksheet.getCell("B7").value = AppState.profile.fullName;
+      worksheet.getCell("B7").font = fontTimesBold;
+
+      worksheet.getCell("F7").value = "Tổ chuyên môn:";
+      worksheet.getCell("F7").font = fontTimesBold;
+      worksheet.mergeCells("G7:J7");
+      worksheet.getCell("G7").value = AppState.profile.department;
+      worksheet.getCell("G7").font = fontTimes;
+
+      // Row 8
+      worksheet.getCell("A8").value = "Môn dạy chính:";
+      worksheet.getCell("A8").font = fontTimesBold;
+      worksheet.mergeCells("B8:C8");
+      worksheet.getCell("B8").value = AppState.profile.mainSubject;
+      worksheet.getCell("B8").font = fontTimes;
+
+      worksheet.getCell("D8").value = "Hệ số lương:";
+      worksheet.getCell("D8").font = fontTimesBold;
+      worksheet.getCell("E8").value = AppState.profile.salaryCoeff;
+      worksheet.getCell("E8").font = fontTimes;
+
+      worksheet.getCell("F8").value = "Phụ cấp:";
+      worksheet.getCell("F8").font = fontTimesBold;
+      worksheet.getCell("G8").value = AppState.profile.allowance;
+      worksheet.getCell("G8").font = fontTimes;
+
+      worksheet.getCell("H8").value = "Giờ tiêu chuẩn:";
+      worksheet.getCell("H8").font = fontTimesBold;
+      worksheet.mergeCells("I8:J8");
+      worksheet.getCell("I8").value = `${AppState.profile.standardHours} tiết/tuần`;
+      worksheet.getCell("I8").font = fontTimesBold;
+
+      // Row 9: Phân công chuyên môn
+      worksheet.getCell("A9").value = "Phân công chuyên môn:";
+      worksheet.getCell("A9").font = fontTimesBold;
+      worksheet.mergeCells("B9:J9");
+      worksheet.getCell("B9").value = AppState.profile.assignmentDesc;
+      worksheet.getCell("B9").font = fontTimes;
+
+      worksheet.addRow([]); // Blank row 10
+
+      // Table Header row 11
+      const headerRowIndex = 11;
+      const headers = [
+        "Thứ", "Ngày/tháng", "Buổi/Tiết", "Lớp", "Môn học",
+        "Tiết PPCT", "Tên bài dạy", "Tiết dạy", "Giờ định mức", "Công tác khác"
+      ];
+      const hRow = worksheet.getRow(headerRowIndex);
+      hRow.values = headers;
+      hRow.font = fontTimesBold;
+      hRow.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      hRow.height = 28;
+
+      for (let col = 1; col <= 10; col++) {
+        const cell = hRow.getCell(col);
+        cell.border = borderThin;
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE2EFDA" } // Soft light green
+        };
+      }
+
+      // Data Rows
+      let currentRowIdx = 12;
+      let totalTeaching = 0;
+      let totalStandard = 0;
+      let totalExtra = AppState.profile.extraTaskHours || 0;
+
+      AppState.previewItems.forEach(item => {
+        const row = worksheet.getRow(currentRowIdx);
+        row.values = [
+          item.dayName,
+          item.dateStr,
+          item.periodLabel,
+          item.className,
+          item.subject,
+          item.lessonNum,
+          item.lessonTitle,
+          item.teachingHours || 1,
+          item.standardQuota,
+          item.extraTaskDesc || ""
+        ];
+
+        totalTeaching += Number(item.teachingHours) || 0;
+        totalStandard += Number(item.standardQuota) || 0;
+
+        row.font = fontTimes;
+        row.alignment = { vertical: "middle" };
+
+        // Center specific columns
+        row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(4).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(6).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
+        row.getCell(9).alignment = { horizontal: "center", vertical: "middle" };
+
+        for (let col = 1; col <= 10; col++) {
+          row.getCell(col).border = borderThin;
+        }
+
+        currentRowIdx++;
+      });
+
+      // Summary Row
+      const sumRow = worksheet.getRow(currentRowIdx);
+      worksheet.mergeCells(`A${currentRowIdx}:G${currentRowIdx}`);
+      sumRow.getCell(1).value = "TỔNG CỘNG SỐ TIẾT:";
+      sumRow.getCell(1).font = fontTimesBold;
+      sumRow.getCell(1).alignment = { horizontal: "right", vertical: "middle" };
+
+      sumRow.getCell(8).value = totalTeaching;
+      sumRow.getCell(8).font = fontTimesBold;
+      sumRow.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
+
+      sumRow.getCell(9).value = totalStandard;
+      sumRow.getCell(9).font = fontTimesBold;
+      sumRow.getCell(9).alignment = { horizontal: "center", vertical: "middle" };
+
+      sumRow.getCell(10).value = totalExtra;
+      sumRow.getCell(10).font = fontTimesBold;
+      sumRow.getCell(10).alignment = { horizontal: "center", vertical: "middle" };
+
+      for (let col = 1; col <= 10; col++) {
+        sumRow.getCell(col).border = borderThin;
+      }
+      currentRowIdx++;
+
+      // Overtime / Extra hours Calculation Row
+      const calcRow = worksheet.getRow(currentRowIdx);
+      worksheet.mergeCells(`A${currentRowIdx}:G${currentRowIdx}`);
+      calcRow.getCell(1).value = `TỔNG CỘNG CHUNG (Tiết dạy + Kiêm nhiệm): ${totalTeaching + totalExtra} tiết  |  SỐ TIẾT TĂNG GIỜ (THỪA GIỜ):`;
+      calcRow.getCell(1).font = fontTimesBold;
+      calcRow.getCell(1).alignment = { horizontal: "right", vertical: "middle" };
+
+      worksheet.mergeCells(`H${currentRowIdx}:J${currentRowIdx}`);
+      const extraPayHours = Math.max(0, (totalTeaching + totalExtra) - AppState.profile.standardHours);
+      calcRow.getCell(8).value = `${extraPayHours} tiết`;
+      calcRow.getCell(8).font = { name: "Times New Roman", size: 12, bold: true, color: { argb: "FFC00000" } };
+      calcRow.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
+
+      for (let col = 1; col <= 10; col++) {
+        calcRow.getCell(col).border = borderThin;
+      }
+      currentRowIdx += 2; // Leave blank line
+
+      // Signature Section
+      // Date row
+      worksheet.mergeCells(`G${currentRowIdx}:J${currentRowIdx}`);
+      worksheet.getCell(`G${currentRowIdx}`).value = `Ngày ..... tháng ..... năm 202...`;
+      worksheet.getCell(`G${currentRowIdx}`).font = { name: "Times New Roman", size: 11, italic: true };
+      worksheet.getCell(`G${currentRowIdx}`).alignment = { horizontal: "center" };
+      currentRowIdx++;
+
+      // Sign titles
+      worksheet.mergeCells(`A${currentRowIdx}:B${currentRowIdx}`);
+      worksheet.getCell(`A${currentRowIdx}`).value = "NGƯỜI LẬP BẢNG";
+      worksheet.getCell(`A${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`A${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`C${currentRowIdx}:E${currentRowIdx}`);
+      worksheet.getCell(`C${currentRowIdx}`).value = "TỔ TRƯỞNG CHUYÊN MÔN";
+      worksheet.getCell(`C${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`C${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`F${currentRowIdx}:H${currentRowIdx}`);
+      worksheet.getCell(`F${currentRowIdx}`).value = "PHÓ HIỆU TRƯỞNG";
+      worksheet.getCell(`F${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`F${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`I${currentRowIdx}:J${currentRowIdx}`);
+      worksheet.getCell(`I${currentRowIdx}`).value = "HIỆU TRƯỞNG";
+      worksheet.getCell(`I${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`I${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      currentRowIdx++;
+      // (Ký, ghi rõ họ tên)
+      worksheet.mergeCells(`A${currentRowIdx}:B${currentRowIdx}`);
+      worksheet.getCell(`A${currentRowIdx}`).value = "(Ký, họ tên)";
+      worksheet.getCell(`A${currentRowIdx}`).font = { name: "Times New Roman", size: 10, italic: true };
+      worksheet.getCell(`A${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`C${currentRowIdx}:E${currentRowIdx}`);
+      worksheet.getCell(`C${currentRowIdx}`).value = "(Ký, họ tên)";
+      worksheet.getCell(`C${currentRowIdx}`).font = { name: "Times New Roman", size: 10, italic: true };
+      worksheet.getCell(`C${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`F${currentRowIdx}:H${currentRowIdx}`);
+      worksheet.getCell(`F${currentRowIdx}`).value = "(Ký, họ tên)";
+      worksheet.getCell(`F${currentRowIdx}`).font = { name: "Times New Roman", size: 10, italic: true };
+      worksheet.getCell(`F${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`I${currentRowIdx}:J${currentRowIdx}`);
+      worksheet.getCell(`I${currentRowIdx}`).value = "(Ký, đóng dấu)";
+      worksheet.getCell(`I${currentRowIdx}`).font = { name: "Times New Roman", size: 10, italic: true };
+      worksheet.getCell(`I${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      // Space for handwritten signature
+      currentRowIdx += 4;
+
+      // Actual Names
+      worksheet.mergeCells(`A${currentRowIdx}:B${currentRowIdx}`);
+      worksheet.getCell(`A${currentRowIdx}`).value = AppState.profile.fullName;
+      worksheet.getCell(`A${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`A${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`C${currentRowIdx}:E${currentRowIdx}`);
+      worksheet.getCell(`C${currentRowIdx}`).value = AppState.profile.headOfDepartment || "Võ Hoàng Sang";
+      worksheet.getCell(`C${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`C${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`F${currentRowIdx}:H${currentRowIdx}`);
+      worksheet.getCell(`F${currentRowIdx}`).value = AppState.profile.vicePrincipal || "Ngô Hồng Ân";
+      worksheet.getCell(`F${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`F${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      worksheet.mergeCells(`I${currentRowIdx}:J${currentRowIdx}`);
+      worksheet.getCell(`I${currentRowIdx}`).value = AppState.profile.principal || "Nguyễn Thành Tuấn";
+      worksheet.getCell(`I${currentRowIdx}`).font = fontTimesBold;
+      worksheet.getCell(`I${currentRowIdx}`).alignment = { horizontal: "center" };
+
+      // Write file and trigger download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const fileName = `BangKe_Tuan${AppState.currentWeek}_${AppState.profile.fullName.replace(/\s+/g, "_")}.xlsx`;
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, fileName);
+
+      showToast(`Đã xuất file ${fileName} thành công!`, "success");
+    }
+
+    document.getElementById("btn-export-excel-action").addEventListener("click", exportToExcel);
+    document.getElementById("btn-export-excel-quick").addEventListener("click", () => {
+      calculateWeeklySchedule();
+      exportToExcel();
+    });
+
+    const adminModal = document.getElementById("admin-modal");
+    document.getElementById("btn-open-admin").addEventListener("click", () => {
+      adminModal.classList.remove("hidden");
+      adminModal.classList.add("flex");
+      loadAdminUsersList();
+    });
+
+    document.getElementById("btn-close-admin-modal").addEventListener("click", () => {
+      adminModal.classList.add("hidden");
+      adminModal.classList.remove("flex");
+    });
+
+    async function loadAdminUsersList() {
+      const listEl = document.getElementById("admin-user-list");
+      listEl.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">Đang tải danh sách...</div>';
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "teacher_profiles"));
+        if (querySnapshot.empty) {
+          listEl.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">Chưa có giáo viên nào trong danh sách.</div>';
+          return;
+        }
+
+        listEl.innerHTML = "";
+        querySnapshot.forEach(docSnap => {
+          const uData = docSnap.data();
+          const prof = uData.profile || {};
+          const item = document.createElement("div");
+          item.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs";
+          item.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-800">${prof.fullName || "Giáo viên mới"}</div>
+              <div class="text-[11px] text-slate-500">Môn: ${prof.mainSubject || "Hóa học"} | Tổ: ${prof.department || "KHTN"}</div>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Đã cấp quyền</span>
+          `;
+          listEl.appendChild(item);
+        });
+      } catch (err) {
+        listEl.innerHTML = `<div class="text-rose-500 text-xs p-2">Lỗi tải danh sách: ${err.message}</div>`;
+      }
+    }
+
+    document.getElementById("btn-create-user").addEventListener("click", async () => {
+      const email = document.getElementById("new-user-email").value.trim();
+      const password = document.getElementById("new-user-password").value;
+      const name = document.getElementById("new-user-name").value.trim();
+      const subject = document.getElementById("new-user-subject").value.trim() || "Hóa học";
+
+      if (!email || !password) {
+        showToast("Vui lòng điền đủ email và mật khẩu!", "error");
+        return;
+      }
+      if (password.length < 6) {
+        showToast("Mật khẩu phải có tối thiểu 6 ký tự!", "error");
+        return;
+      }
+
+      try {
+        // Lưu thông tin người dùng được admin tạo vào danh sách cấp phép Firestore
+        const newUserDocId = "pending_" + email.replace(/[^a-zA-Z0-9]/g, "_");
+        await setDoc(doc(db, "teacher_profiles", newUserDocId), {
+          profile: {
+            fullName: name || "Giáo viên mới",
+            mainSubject: subject,
+            department: "Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN",
+            standardHours: 17,
+            salaryCoeff: 2.67,
+            allowance: 0.40,
+            assignmentDesc: `Dạy ${subject}`,
+            headOfDepartment: "Võ Hoàng Sang",
+            vicePrincipal: "Ngô Hồng Ân",
+            principal: "Nguyễn Thành Tuấn",
+            extraTaskName: "",
+            extraTaskHours: 0
+          },
+          email: email,
+          createdByAdmin: ADMIN_EMAIL,
+          createdAt: new Date().toISOString()
+        });
+
+        showToast(`Đã lưu tài khoản ${email} vào hệ thống thành công! Giáo viên có thể đăng ký/đăng nhập mật khẩu đã cấp.`, "success");
+        document.getElementById("new-user-email").value = "";
+        document.getElementById("new-user-password").value = "";
+        document.getElementById("new-user-name").value = "";
+        loadAdminUsersList();
+      } catch (err) {
+        showToast("Lỗi cấp tài khoản: " + err.message, "error");
+      }
+    });
+
+  </script>
+</body>
+</html>
