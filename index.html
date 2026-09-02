@@ -99,6 +99,10 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
+            <label class="block font-semibold mb-1">Tên đơn vị / Trường:</label>
+            <input type="text" id="profSchoolName" class="w-full px-3 py-2 border rounded font-semibold text-blue-900">
+          </div>
+          <div>
             <label class="block font-semibold mb-1">Họ và tên giáo viên (IN HOA):</label>
             <input type="text" id="profFullName" class="w-full px-3 py-2 border rounded uppercase font-semibold">
           </div>
@@ -106,11 +110,11 @@
             <label class="block font-semibold mb-1">Môn dạy chính:</label>
             <input type="text" id="profMainSubject" class="w-full px-3 py-2 border rounded">
           </div>
+
           <div>
             <label class="block font-semibold mb-1">Tổ chuyên môn:</label>
             <input type="text" id="profDepartment" class="w-full px-3 py-2 border rounded">
           </div>
-
           <div>
             <label class="block font-semibold mb-1">Hệ số lương:</label>
             <input type="number" step="0.01" id="profSalaryCoeff" class="w-full px-3 py-2 border rounded">
@@ -119,11 +123,11 @@
             <label class="block font-semibold mb-1">Phụ cấp:</label>
             <input type="number" step="0.01" id="profAllowance" class="w-full px-3 py-2 border rounded">
           </div>
+
           <div>
             <label class="block font-semibold mb-1">Số giờ tiêu chuẩn (tiết/tuần):</label>
             <input type="number" id="profStandardHours" class="w-full px-3 py-2 border rounded">
           </div>
-
           <div>
             <label class="block font-semibold mb-1">Tổ trưởng chuyên môn:</label>
             <input type="text" id="profLeader" class="w-full px-3 py-2 border rounded">
@@ -142,7 +146,7 @@
           <div class="flex justify-between items-center mb-3">
             <div>
               <span class="font-bold text-sm text-slate-800">Công tác kiêm nhiệm / Công tác khác (sẽ điền vào cột CT khác):</span>
-              <span class="text-xs text-slate-500 block">Ví dụ: Chủ nhiệm lớp 12a3 (3 tiết/tuần), Phụ trách phòng bộ môn...</span>
+              <span class="text-xs text-slate-500 block">Mặc định Chủ nhiệm là 4 tiết/tuần (có thể thêm, xóa, sửa linh hoạt).</span>
             </div>
             <button onclick="addDutyItem()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded transition">
               <i class="fa-solid fa-plus mr-1"></i> Thêm công tác
@@ -153,16 +157,21 @@
       </section>
 
       <section class="bg-white rounded-lg shadow border border-slate-200 p-5">
-        <h3 class="text-lg font-bold text-blue-900 border-b pb-3 mb-4">
-          <i class="fa-solid fa-book-open-reader mr-2 text-blue-600"></i>2. MÔN HỌC, HĐTNHN & PHÂN CÔNG TỪNG LỚP
-        </h3>
+        <div class="flex flex-wrap justify-between items-center border-b pb-3 mb-4 gap-2">
+          <h3 class="text-lg font-bold text-blue-900">
+            <i class="fa-solid fa-book-open-reader mr-2 text-blue-600"></i>2. MÔN HỌC, HĐTNHN, NỘI DUNG KHÁC & PHÂN CÔNG TỪNG LỚP
+          </h3>
+          <button onclick="saveSubjectSettingsOnly()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded transition">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Lưu cấu hình môn học & hoạt động khác
+          </button>
+        </div>
 
         <div class="mb-5">
           <label class="block font-semibold text-sm mb-2 text-slate-700">Chọn các môn & chuyên đề bạn tham gia giảng dạy:</label>
           <div id="subjectCheckboxGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-xs"></div>
         </div>
 
-        <div class="mb-5 p-4 bg-blue-50/70 rounded border border-blue-200">
+        <div class="mb-4 p-4 bg-blue-50/70 rounded border border-blue-200">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <input type="checkbox" id="chkHasHDTN" class="w-4 h-4 text-blue-600 rounded" onchange="toggleHDTNSection()">
@@ -175,11 +184,24 @@
           <div id="hdtnConfigArea" class="hidden mt-3 space-y-2"></div>
         </div>
 
+        <div class="mb-5 p-4 bg-amber-50/70 rounded border border-amber-300">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" id="chkHasOtherActivities" class="w-4 h-4 text-amber-600 rounded" onchange="toggleOtherActivitiesSection()">
+              <label for="chkHasOtherActivities" class="font-bold text-sm text-amber-900 cursor-pointer">Thầy cô có dạy nội dung khác không? (Ôn tốt nghiệp, Ôn HSG, GDĐP, STEM, AI, Kĩ năng sống...)</label>
+            </div>
+            <button id="btnAddOtherActivityCard" onclick="addOtherActivityCard()" class="hidden bg-amber-600 hover:bg-amber-700 text-white text-xs px-2.5 py-1 rounded">
+              <i class="fa-solid fa-plus mr-1"></i> Thêm thẻ Nội dung khác
+            </button>
+          </div>
+          <div id="otherActivitiesConfigArea" class="hidden mt-3 space-y-2"></div>
+        </div>
+
         <div class="p-4 bg-slate-50 rounded border border-slate-300">
           <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
             <div>
               <span class="font-bold text-sm text-slate-800">Danh sách từng lớp dạy & phân môn (Mỗi lớp 1 dòng, có chọn Khối):</span>
-              <p class="text-xs text-slate-500">Khai báo sẵn tại đây, bấm Lưu phân công để tự động nạp lại mỗi lần đăng nhập.</p>
+              <p class="text-xs text-slate-500">Bao gồm môn chuẩn và các Nội dung khác đã khai báo. Bấm Lưu phân công để tự động nạp lại mỗi lần đăng nhập.</p>
             </div>
             <div class="flex gap-2">
               <button onclick="addClassSubjectRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded transition">
@@ -200,7 +222,7 @@
             <h3 class="text-lg font-bold text-blue-900">
               <i class="fa-solid fa-list-ol mr-2 text-blue-600"></i>3. PHÂN PHỐI CHƯƠNG TRÌNH (PPCT) THEO KHỐI & KHO DÙNG CHUNG
             </h3>
-            <span class="text-xs text-slate-500">Mỗi khối của từng môn có khung PPCT riêng biệt. Cú pháp: &lt;Tiết PPCT&gt;&lt;Dấu cách&gt;&lt;Tên bài dạy&gt;.</span>
+            <span class="text-xs text-slate-500">Mỗi khối của từng môn/hoạt động có khung PPCT riêng biệt. Cú pháp: &lt;Tiết PPCT&gt;&lt;Dấu cách&gt;&lt;Tên bài dạy&gt;.</span>
           </div>
           <div class="flex gap-2">
             <button onclick="saveAllPPCT()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded transition">
@@ -264,7 +286,7 @@
             <h3 class="text-lg font-bold text-blue-900">
               <i class="fa-solid fa-file-excel mr-2 text-emerald-600"></i>5. BẢNG XEM TRƯỚC BÁO GIẢNG & XUẤT TẬP TIN EXCEL
             </h3>
-            <p class="text-xs text-slate-500">Tên bài đã được tự động lấy chính xác từ PPCT theo môn và khối của lớp tương ứng.</p>
+            <p class="text-xs text-slate-500">Tên bài đã được tự động lấy chính xác từ PPCT theo môn/hoạt động và khối của lớp tương ứng.</p>
           </div>
           <button onclick="exportToExcelExactMatch()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base px-6 py-2.5 rounded shadow-lg transition flex items-center">
             <i class="fa-solid fa-file-arrow-down mr-2 text-xl"></i> XUẤT FILE EXCEL CHUẨN C08-HD
@@ -316,9 +338,7 @@
       memoryLocalCache,
       doc, 
       getDoc, 
-      setDoc, 
-      collection, 
-      getDocs 
+      setDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -333,7 +353,6 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    // Khởi tạo Firestore với memoryLocalCache để tránh lỗi "client is offline" khi đọc dữ liệu dùng chung
     const db = initializeFirestore(app, {
       localCache: memoryLocalCache()
     });
@@ -349,6 +368,7 @@
 
     let currentUser = null;
     let userProfile = {
+      schoolName: "Trường THPT Long Hựu Đông",
       fullName: "NGUYỄN CÔNG TÒA",
       mainSubject: "Hóa học",
       salaryCoeff: 2.67,
@@ -356,7 +376,7 @@
       department: "Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN",
       standardHours: 17,
       dutyList: [
-        { title: "Chủ nhiệm lớp 12a3", classTarget: "12a3", periods: 3 }
+        { title: "Chủ nhiệm lớp 12a3", classTarget: "12a3", periods: 4 }
       ],
       leader: "Võ Hoàng Sang",
       vicePrincipal: "Ngô Hồng Ân",
@@ -366,6 +386,8 @@
       hdtnClasses: [
         { className: "12a4", grade: "12", periodIndex: 1 }
       ],
+      hasOtherActivities: false,
+      otherActivities: [],
       classSubjectAssignments: [
         { className: "11a1", grade: "11", subject: "Hóa học" },
         { className: "11a1", grade: "11", subject: "CĐ Hóa học" },
@@ -476,24 +498,29 @@
           email: email,
           createdAt: new Date().toISOString(),
           profile: {
+            schoolName: "Trường THPT Long Hựu Đông",
             fullName: "GIÁO VIÊN",
             mainSubject: "Hóa học",
             salaryCoeff: 2.67,
             allowance: 0.4,
             department: "Vật lý - Hóa học - Sinh học - Công nghệ - HĐTNHN",
             standardHours: 17,
-            dutyList: [],
+            dutyList: [
+              { title: "Chủ nhiệm", classTarget: "", periods: 4 }
+            ],
             leader: "Võ Hoàng Sang",
             vicePrincipal: "Ngô Hồng Ân",
             principal: "Nguyễn Thành Tuấn",
             selectedSubjects: ["Hóa học"],
             hasHDTN: false,
             hdtnClasses: [],
+            hasOtherActivities: false,
+            otherActivities: [],
             classSubjectAssignments: [],
             ppctData: {},
             timetable: {}
           }
-        });
+        }, { merge: true });
 
         msg.className = "text-xs mt-2 text-emerald-600 font-semibold";
         msg.textContent = `Tạo thành công tài khoản: ${email}!`;
@@ -509,7 +536,14 @@
       try {
         const userDoc = await getDoc(doc(db, "users", uid));
         if (userDoc.exists() && userDoc.data().profile) {
-          userProfile = { ...userProfile, ...userDoc.data().profile };
+          const loaded = userDoc.data().profile;
+          userProfile = {
+            ...userProfile,
+            ...loaded,
+            dutyList: (loaded.dutyList && loaded.dutyList.length > 0) ? loaded.dutyList : userProfile.dutyList,
+            hasOtherActivities: loaded.hasOtherActivities || false,
+            otherActivities: loaded.otherActivities || []
+          };
         }
       } catch (err) {
         console.warn("Chưa có hồ sơ đám mây, sử dụng cấu hình mặc định.", err);
@@ -518,6 +552,7 @@
       renderDutyList();
       renderSubjectCheckboxes();
       renderHDTNConfig();
+      renderOtherActivitiesConfig();
       renderClassSubjectAssignments();
       renderPPCTBoxes();
       buildTimetableUI();
@@ -525,6 +560,7 @@
     }
 
     function populateProfileUI() {
+      document.getElementById("profSchoolName").value = userProfile.schoolName || "Trường THPT Long Hựu Đông";
       document.getElementById("profFullName").value = userProfile.fullName || "";
       document.getElementById("profMainSubject").value = userProfile.mainSubject || "";
       document.getElementById("profSalaryCoeff").value = userProfile.salaryCoeff || 2.67;
@@ -538,6 +574,7 @@
 
     window.saveUserProfile = async function() {
       if (!currentUser) return;
+      userProfile.schoolName = document.getElementById("profSchoolName").value.trim() || "Trường THPT Long Hựu Đông";
       userProfile.fullName = document.getElementById("profFullName").value.trim().toUpperCase();
       userProfile.mainSubject = document.getElementById("profMainSubject").value.trim();
       userProfile.salaryCoeff = parseFloat(document.getElementById("profSalaryCoeff").value) || 0;
@@ -579,7 +616,7 @@
           <input type="text" placeholder="Tên công tác kiêm nhiệm (VD: Chủ nhiệm lớp 12a3)" value="${duty.title || ''}" class="duty-title flex-1 px-2.5 py-1.5 text-xs border rounded">
           <input type="text" placeholder="Lớp (nếu có)" value="${duty.classTarget || ''}" class="duty-class w-24 px-2 py-1.5 text-xs border rounded text-center">
           <div class="flex items-center gap-1">
-            <input type="number" min="1" max="20" value="${duty.periods || 1}" class="duty-periods w-16 px-2 py-1.5 text-xs border rounded text-center">
+            <input type="number" min="1" max="20" value="${duty.periods || 4}" class="duty-periods w-16 px-2 py-1.5 text-xs border rounded text-center">
             <span class="text-xs text-slate-500">tiết/tuần</span>
           </div>
           <button onclick="removeDutyItem(${idx})" class="text-red-500 hover:text-red-700 p-1 text-sm" title="Xóa công tác này">
@@ -592,7 +629,7 @@
 
     window.addDutyItem = function() {
       if (!userProfile.dutyList) userProfile.dutyList = [];
-      userProfile.dutyList.push({ title: "Chủ nhiệm", classTarget: "", periods: 3 });
+      userProfile.dutyList.push({ title: "Chủ nhiệm", classTarget: "", periods: 4 });
       renderDutyList();
     };
 
@@ -715,6 +752,101 @@
       userProfile.hdtnClasses[idx].periodIndex = parseInt(val) || 1;
     };
 
+    function renderOtherActivitiesConfig() {
+      const chk = document.getElementById("chkHasOtherActivities");
+      const btnAdd = document.getElementById("btnAddOtherActivityCard");
+      const area = document.getElementById("otherActivitiesConfigArea");
+      chk.checked = !!userProfile.hasOtherActivities;
+
+      if (chk.checked) {
+        btnAdd.classList.remove("hidden");
+        area.classList.remove("hidden");
+      } else {
+        btnAdd.classList.add("hidden");
+        area.classList.add("hidden");
+      }
+
+      area.innerHTML = "";
+      if (!userProfile.otherActivities) userProfile.otherActivities = [];
+
+      userProfile.otherActivities.forEach((item, idx) => {
+        const row = document.createElement("div");
+        row.className = "flex flex-wrap items-center gap-2 bg-white p-2.5 rounded border border-amber-300 text-xs shadow-sm";
+        row.innerHTML = `
+          <span class="font-bold text-amber-900">Tên Hoạt động/Nội dung:</span>
+          <input type="text" value="${item.activityName || ''}" placeholder="VD: Ôn tốt nghiệp, GDĐP, STEM, AI..." class="px-2.5 py-1.5 border rounded w-48 font-semibold text-blue-900" onchange="updateOtherActivityField(${idx}, 'activityName', this.value)">
+          <span class="font-bold text-slate-700 ml-1">Lớp dạy:</span>
+          <input type="text" value="${item.className || ''}" placeholder="VD: 12a1" class="px-2.5 py-1.5 border rounded w-24 uppercase font-semibold text-center" onchange="updateOtherActivityField(${idx}, 'className', this.value)">
+          <span class="font-bold text-slate-700 ml-1">Khối:</span>
+          <select class="border rounded px-2 py-1.5 font-semibold text-slate-800" onchange="updateOtherActivityField(${idx}, 'grade', this.value)">
+            <option value="10" ${item.grade == "10" ? "selected" : ""}>Khối 10</option>
+            <option value="11" ${item.grade == "11" ? "selected" : ""}>Khối 11</option>
+            <option value="12" ${(!item.grade || item.grade == "12") ? "selected" : ""}>Khối 12</option>
+          </select>
+          <span class="text-xs bg-amber-100 text-amber-900 px-2 py-1 rounded font-medium ml-1">[${item.className || '?'}] - ${item.activityName || '?'} (K${item.grade || '12'})</span>
+          <button onclick="removeOtherActivityCard(${idx})" class="text-red-500 hover:text-red-700 ml-auto p-1.5" title="Xóa thẻ nội dung này">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        area.appendChild(row);
+      });
+    }
+
+    window.toggleOtherActivitiesSection = function() {
+      userProfile.hasOtherActivities = document.getElementById("chkHasOtherActivities").checked;
+      renderOtherActivitiesConfig();
+      renderClassSubjectAssignments();
+      renderPPCTBoxes();
+      buildTimetableUI();
+    };
+
+    window.addOtherActivityCard = function() {
+      if (!userProfile.otherActivities) userProfile.otherActivities = [];
+      userProfile.otherActivities.push({ activityName: "Ôn tốt nghiệp", className: "12a1", grade: "12" });
+      renderOtherActivitiesConfig();
+      renderClassSubjectAssignments();
+      renderPPCTBoxes();
+      buildTimetableUI();
+    };
+
+    window.removeOtherActivityCard = function(idx) {
+      userProfile.otherActivities.splice(idx, 1);
+      renderOtherActivitiesConfig();
+      renderClassSubjectAssignments();
+      renderPPCTBoxes();
+      buildTimetableUI();
+    };
+
+    window.updateOtherActivityField = function(idx, field, val) {
+      userProfile.otherActivities[idx][field] = val.trim();
+      if (field === 'className') {
+        const detected = detectGradeFromName(val.trim());
+        if (detected) userProfile.otherActivities[idx].grade = detected;
+      }
+      renderOtherActivitiesConfig();
+      renderClassSubjectAssignments();
+      renderPPCTBoxes();
+      buildTimetableUI();
+    };
+
+    window.saveSubjectSettingsOnly = async function() {
+      if (!currentUser) return;
+      try {
+        await setDoc(doc(db, "users", currentUser.uid), {
+          profile: {
+            selectedSubjects: userProfile.selectedSubjects || [],
+            hasHDTN: !!userProfile.hasHDTN,
+            hdtnClasses: userProfile.hdtnClasses || [],
+            hasOtherActivities: !!userProfile.hasOtherActivities,
+            otherActivities: userProfile.otherActivities || []
+          }
+        }, { merge: true });
+        alert("Đã lưu cấu hình môn học, HĐTNHN và nội dung khác thành công!");
+      } catch (err) {
+        alert("Lỗi lưu cấu hình: " + err.message);
+      }
+    };
+
     function detectGradeFromName(name) {
       if (!name) return "";
       const match = name.match(/10|11|12/);
@@ -725,6 +857,13 @@
       const list = [...(userProfile.selectedSubjects || [])];
       if (userProfile.hasHDTN && !list.includes("HĐTNHN")) {
         list.push("HĐTNHN");
+      }
+      if (userProfile.hasOtherActivities && userProfile.otherActivities) {
+        userProfile.otherActivities.forEach(act => {
+          if (act.activityName && !list.includes(act.activityName)) {
+            list.push(act.activityName);
+          }
+        });
       }
       return list;
     }
@@ -746,7 +885,7 @@
         const row = document.createElement("div");
         row.className = "flex flex-wrap items-center gap-2 bg-white p-2 rounded border border-slate-200 text-xs";
         
-        let subOptions = `<option value="">-- Chọn môn --</option>`;
+        let subOptions = `<option value="">-- Chọn môn / hoạt động --</option>`;
         availableSubjects.forEach(s => {
           subOptions += `<option value="${s}" ${s === item.subject ? "selected" : ""}>${s}</option>`;
         });
@@ -762,7 +901,7 @@
             <option value="11" ${currentGrade === "11" ? "selected" : ""}>Khối 11</option>
             <option value="12" ${currentGrade === "12" ? "selected" : ""}>Khối 12</option>
           </select>
-          <span class="font-bold text-slate-600 ml-1">Môn:</span>
+          <span class="font-bold text-slate-600 ml-1">Môn / Nội dung:</span>
           <select class="px-2 py-1.5 border rounded font-semibold text-slate-800" onchange="updateClassAssignmentField(${idx}, 'subject', this.value)">
             ${subOptions}
           </select>
@@ -810,7 +949,9 @@
             classSubjectAssignments: userProfile.classSubjectAssignments,
             selectedSubjects: userProfile.selectedSubjects,
             hasHDTN: userProfile.hasHDTN,
-            hdtnClasses: userProfile.hdtnClasses
+            hdtnClasses: userProfile.hdtnClasses,
+            hasOtherActivities: userProfile.hasOtherActivities,
+            otherActivities: userProfile.otherActivities
           }
         }, { merge: true });
         alert("Đã lưu bảng phân công chuyên môn và các lớp dạy thành công!");
@@ -847,6 +988,19 @@
         });
       }
 
+      if (userProfile.hasOtherActivities && userProfile.otherActivities) {
+        userProfile.otherActivities.forEach(act => {
+          if (act.activityName && act.className) {
+            const g = act.grade || detectGradeFromName(act.className) || "12";
+            const key = `${act.activityName}_K${g}`;
+            if (!pairSet.has(key)) {
+              pairSet.add(key);
+              pairs.push({ subject: act.activityName, grade: g, key: key, title: `${act.activityName} - Khối ${g}` });
+            }
+          }
+        });
+      }
+
       if (pairs.length === 0) {
         getAvailableSubjectsList().forEach(s => {
           const key = `${s}_K11`;
@@ -863,7 +1017,7 @@
       const pairs = getActiveSubjectGradePairs();
 
       if (pairs.length === 0) {
-        container.innerHTML = `<div class="col-span-2 text-center text-slate-400 py-6">Vui lòng chọn môn và khai báo lớp dạy ở mục 2.</div>`;
+        container.innerHTML = `<div class="col-span-2 text-center text-slate-400 py-6">Vui lòng chọn môn/nội dung và khai báo lớp dạy ở mục 2.</div>`;
         return;
       }
 
@@ -935,7 +1089,6 @@
       }
     };
 
-    // HÀM TẢI PPCT DÙNG CHUNG: DÙNG FIRESTORE SDK KẾT HỢP DỰ PHÒNG QUA REST API TRÁNH LỖI "CLIENT IS OFFLINE"
     window.loadPPCTFromRepository = async function(subject, grade, targetKey) {
       try {
         let content = "";
@@ -951,7 +1104,6 @@
           console.warn("Lỗi Firestore SDK, chuyển sang REST API fallback:", e);
         }
 
-        // Dự phòng bằng REST API trực tiếp tới Firestore
         if (!content) {
           const restUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/shared_ppct/${encodeURIComponent(targetKey)}`;
           const res = await fetch(restUrl);
@@ -994,12 +1146,56 @@
       { key: 7, label: "Thứ 7" }
     ];
 
+    function getAllTimetableAvailableCards() {
+      const list = [];
+      const set = new Set();
+
+      (userProfile.classSubjectAssignments || []).forEach(c => {
+        if (c.className && c.subject) {
+          const g = c.grade || detectGradeFromName(c.className) || "11";
+          const val = `${c.className}|${c.subject}|${g}`;
+          if (!set.has(val)) {
+            set.add(val);
+            list.push({ className: c.className, subject: c.subject, grade: g, val: val });
+          }
+        }
+      });
+
+      if (userProfile.hasHDTN && userProfile.hdtnClasses) {
+        userProfile.hdtnClasses.forEach(h => {
+          if (h.className) {
+            const g = h.grade || detectGradeFromName(h.className) || "12";
+            const val = `${h.className}|HĐTNHN|${g}`;
+            if (!set.has(val)) {
+              set.add(val);
+              list.push({ className: h.className, subject: "HĐTNHN", grade: g, val: val });
+            }
+          }
+        });
+      }
+
+      if (userProfile.hasOtherActivities && userProfile.otherActivities) {
+        userProfile.otherActivities.forEach(act => {
+          if (act.className && act.activityName) {
+            const g = act.grade || detectGradeFromName(act.className) || "12";
+            const val = `${act.className}|${act.activityName}|${g}`;
+            if (!set.has(val)) {
+              set.add(val);
+              list.push({ className: act.className, subject: act.activityName, grade: g, val: val });
+            }
+          }
+        });
+      }
+
+      return list;
+    }
+
     function buildTimetableUI() {
       const tbody = document.getElementById("timetableBody");
       tbody.innerHTML = "";
       if (!userProfile.timetable) userProfile.timetable = {};
 
-      const cards = userProfile.classSubjectAssignments || [];
+      const cards = getAllTimetableAvailableCards();
 
       const sessions = [
         { name: "Sáng", prefix: "S", periods: [1, 2, 3, 4, 5] },
@@ -1020,12 +1216,8 @@
 
             let cardOptions = `<option value="">(Trống)</option>`;
             cards.forEach(c => {
-              if (c.className && c.subject) {
-                const grade = c.grade || detectGradeFromName(c.className) || "11";
-                const val = `${c.className}|${c.subject}|${grade}`;
-                const isSelected = (currentVal === val || currentVal === `${c.className}|${c.subject}`);
-                cardOptions += `<option value="${val}" ${isSelected ? "selected" : ""}>[${c.className}] ${c.subject}</option>`;
-              }
+              const isSelected = (currentVal === c.val || currentVal === `${c.className}|${c.subject}`);
+              cardOptions += `<option value="${c.val}" ${isSelected ? "selected" : ""}>[${c.className}] ${c.subject}</option>`;
             });
 
             tr.innerHTML += `
@@ -1132,7 +1324,6 @@
       return map;
     }
 
-    // TỔNG HỢP VÀ XEM TRƯỚC: TỰ ĐỘNG ĐỒNG BỘ TRỰC TIẾP TỪ GIAO DIỆN (ĐẢM BẢO TẤT CẢ TÀI KHOẢN KHÔNG CẦN RE-LOGIN)
     window.generateWeeklyReportPreview = function() {
       const week = parseInt(document.getElementById("selWeek").value) || 1;
       const mondayStr = document.getElementById("inputMondayDate").value;
@@ -1141,14 +1332,12 @@
         return;
       }
 
-      // Đọc trực tiếp thời khóa biểu từ các ô select đang hiển thị trên màn hình
       if (!userProfile.timetable) userProfile.timetable = {};
       document.querySelectorAll(".tkb-cell-select").forEach(sel => {
         const key = sel.getAttribute("data-key");
         if (key) userProfile.timetable[key] = sel.value;
       });
 
-      // Đọc trực tiếp toàn bộ textarea PPCT đang hiển thị trên màn hình
       if (!userProfile.ppctData) userProfile.ppctData = {};
       document.querySelectorAll(".ppct-raw").forEach(ta => {
         const key = ta.getAttribute("data-key");
@@ -1354,7 +1543,6 @@
       calculatedPreviewRows[idx][field] = val;
     };
 
-    // 9. XUẤT FILE EXCEL: ĐẢM BẢO CHÍNH XÁC Y CHANG BẢNG MẪU VÀ TÁCH RÕ HÀNG 12 VÀ HÀNG 13:14 (A, B, C)
     window.exportToExcelExactMatch = async function() {
       if (calculatedPreviewRows.length === 0) {
         alert("Vui lòng bấm 'Tổng hợp & Xem trước bảng Tăng Giờ' trước khi xuất Excel!");
@@ -1390,7 +1578,7 @@
       };
 
       sheet.mergeCells('A1:E1');
-      sheet.getCell('A1').value = "Đơn vị : Trường THPT Long Hựu Đông";
+      sheet.getCell('A1').value = `Đơn vị : ${userProfile.schoolName || 'Trường THPT Long Hựu Đông'}`;
       sheet.getCell('A1').font = { name: 'Times New Roman', size: 12, bold: true };
       sheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -1435,26 +1623,21 @@
       sheet.getCell('A11').value = `Phân công chuyên môn: ${assignmentDescriptions}${dutyDescriptions ? ', ' + dutyDescriptions : ''}`;
       sheet.getCell('A11').font = { name: 'Times New Roman', size: 12 };
 
-      // ĐỊNH DẠNG CHUẨN XÁC HÀNG TIÊU ĐỀ THEO ĐÚNG ẢNH ĐÍNH KÈM
       sheet.getCell('A12').value = "STT";
       sheet.getCell('B12').value = "Ngày tháng năm";
       sheet.getCell('C12').value = "Những công việc đã làm (ghi tên bài dạy)";
 
-      // Cột D (Lớp): Gộp cả 3 dòng D12:D14
       sheet.mergeCells('D12:D14');
       sheet.getCell('D12').value = "Lớp";
 
-      // Tiêu đề nhóm Số giờ thực hiện (E12:G12) & Số giờ định mức (H12:J12)
       sheet.mergeCells('E12:G12');
       sheet.getCell('E12').value = "Số giờ thực hiện";
       sheet.mergeCells('H12:J12');
       sheet.getCell('H12').value = "Số giờ định mức";
 
-      // Số giờ thừa (K12:K13)
       sheet.mergeCells('K12:K13');
       sheet.getCell('K12').value = "Số giờ thừa";
 
-      // HÀNG 13 & 14 ĐƯỢC TÁCH CHO CÁC Ô A, B, C THEO ĐÚNG ẢNH MẪU
       sheet.mergeCells('A13:A14');
       sheet.getCell('A13').value = "A";
 
@@ -1464,7 +1647,6 @@
       sheet.mergeCells('C13:C14');
       sheet.getCell('C13').value = "C";
 
-      // Hàng 13 các cột con
       sheet.getCell('E13').value = "Giờ dạy";
       sheet.getCell('F13').value = "CT khác";
       sheet.getCell('G13').value = "Cộng";
@@ -1475,7 +1657,6 @@
       sheet.getCell('J13').value = "Còn lại";
       sheet.getCell('J13').font = { name: 'Times New Roman', size: 10, bold: true };
 
-      // Hàng 14 ghi số thứ tự công thức (1) đến (7)
       sheet.getCell('E14').value = "(1)";
       sheet.getCell('F14').value = "(2)";
       sheet.getCell('G14').value = "(3) = (1)+(2)";
@@ -1495,7 +1676,6 @@
         }
       }
 
-      // ĐIỀN CÁC DÒNG DỮ LIỆU TỪ DÒNG 15
       const startDataRow = 15;
       let currentRowIndex = startDataRow;
 
@@ -1538,7 +1718,6 @@
 
       const endDataRow = currentRowIndex - 1;
 
-      // HÀNG TỔNG CỘNG
       const sumRowIndex = currentRowIndex;
       const sumRow = sheet.getRow(sumRowIndex);
       sumRow.getCell(3).value = "Tổng cộng";
